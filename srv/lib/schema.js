@@ -4,8 +4,8 @@ function parseDate (v) {
   if (v == null) return null
   const s = String(v).trim()
   let y, m, d
-  let mt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (mt) { d = +mt[1]; m = +mt[2]; y = +mt[3] }
+  let mt = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/)
+  if (mt) { d = +mt[1]; m = +mt[2]; y = mt[3].length === 2 ? 2000 + +mt[3] : +mt[3] }
   else if ((mt = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3] }
   else return null
   const dt = new Date(Date.UTC(y, m - 1, d))
@@ -16,12 +16,16 @@ function parseDate (v) {
 function parseAmount (v) {
   if (v == null || v === '') return null
   if (typeof v === 'number') return Number.isFinite(v) ? v : null
-  let s = String(v).replace(/[^\d,.\-]/g, '')
+  const raw = String(v)
+  // segno negativo: meno davanti o dietro, oppure importo tra parentesi (stile contabile)
+  const negative = raw.includes('-') || /^\s*\(.*\)\s*$/.test(raw)
+  let s = raw.replace(/[^\d,.]/g, '')
   if (!/\d/.test(s)) return null
   if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.')
-  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
   const n = Number(s)
-  return Number.isFinite(n) ? n : null
+  if (!Number.isFinite(n)) return null
+  return n === 0 ? 0 : negative ? -n : n
 }
 
 const text = v => {

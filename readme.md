@@ -32,7 +32,7 @@ cf deploy mta_archives/itas-ecbrk_1.0.0.mtar
 
 ## Note
 
-- **Nessuna autenticazione:** app interna, pensata per essere mostrata in riunione. Chiunque abbia l'URL può caricare documenti e consumare AI Core.
+- **Nessuna autenticazione:** app interna, pensata per essere mostrata in riunione. Chiunque abbia l'URL può caricare documenti, consumare AI Core e leggere tutti i dati estratti (nomi dei contraenti, polizze, importi) dall'OData `/odata/archivio`. Non esporre l'URL al di fuori della demo.
 - **SQLite senza persistenza su CF:** il filesystem del container è effimero, quindi i dati (e l'elenco dei documenti già caricati) si perdono a ogni restart o restage. L'app gira in una sola istanza.
 - **Duplicati:** il controllo confronta l'hash SHA-256 del file. Un PDF rigenerato con contenuto uguale ma byte diversi viene elaborato come nuovo.
 - **Limiti:** file PDF fino a 10 MB. Nelle tabelle lunghe il modello può saltare righe: controllare il numero di righe estratte accanto al titolo della tabella.

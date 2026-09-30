@@ -15,9 +15,13 @@ Regole:
 - dataIncasso: colonna "Data Incasso" / "Data incasso".
 - Copia importi e date come sono scritti nel documento. Se un valore manca usa null. Non inventare valori.`
 
-function parseModelJson (content) {
+// il contenuto della risposta contiene dati di clienti: nei log solo metadati
+function parseModelJson (content, choice, usage) {
   const s = String(content ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-  try { return JSON.parse(s) } catch { throw new HttpError(502, 'Risposta del modello non valida', 'BAD_MODEL_RESPONSE') }
+  try { return JSON.parse(s) } catch {
+    console.error(`[llm] JSON non valido: finish_reason=${choice?.finish_reason}, lunghezza=${s.length}, usage=${JSON.stringify(usage)}`)
+    throw new HttpError(502, 'Risposta del modello non valida', 'BAD_MODEL_RESPONSE')
+  }
 }
 
 function createLlmClient ({ config, fetchImpl = fetch }) {
@@ -62,7 +66,12 @@ function createLlmClient ({ config, fetchImpl = fetch }) {
       console.error('[llm]', err.message)
       throw new HttpError(502, 'Servizio di estrazione non disponibile', 'LLM_UNAVAILABLE')
     }
-    return parseModelJson(data.choices?.[0]?.message?.content)
+    const choice = data.choices?.[0]
+    if (choice?.finish_reason === 'length') {
+      console.error(`[llm] risposta troncata: finish_reason=length, usage=${JSON.stringify(data.usage)}`)
+      throw new HttpError(502, 'Risposta del modello troncata: documento troppo lungo', 'MODEL_TRUNCATED')
+    }
+    return parseModelJson(choice?.message?.content, choice, data.usage)
   }
 
   return { extractPolicies }

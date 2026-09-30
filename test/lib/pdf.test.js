@@ -21,3 +21,14 @@ test('PDF senza testo (scansione): restituisce immagini PNG', async () => {
 test('PDF corrotto: 400', async () => {
   await assert.rejects(extractContent(Buffer.from('%PDF-1.4 non valido')), e => e.status === 400)
 })
+
+test('scansione oltre 10 pagine: rifiutata con 422, non troncata in silenzio', async () => {
+  await assert.rejects(extractContent(makePdf('', 11)), e => e.status === 422 && /10 pagine/.test(e.message))
+  const ok = await extractContent(makePdf('', 10))
+  assert.equal(ok.images.length, 10)
+})
+
+test('PDF testuale con più pagine: nessun limite di pagine sul testo', async () => {
+  const r = await extractContent(makePdf(LONG, 12))
+  assert.deepEqual(r.images, [])
+})

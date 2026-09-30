@@ -12,6 +12,13 @@ test('parseDate converte gg/mm/aaaa e rifiuta il resto', () => {
   assert.equal(parseDate('ieri'), null)
 })
 
+test('parseDate accetta separatori . e - e anni a due cifre', () => {
+  assert.equal(parseDate('01.02.2026'), '2026-02-01')
+  assert.equal(parseDate('01-02-2026'), '2026-02-01')
+  assert.equal(parseDate('1/2/26'), '2026-02-01')
+  assert.equal(parseDate('31/02/26'), null)
+})
+
 test('parseAmount gestisce formati italiani, numeri, negativi e null', () => {
   assert.equal(parseAmount('5.725,73'), 5725.73)
   assert.equal(parseAmount('1.927,76'), 1927.76)
@@ -42,4 +49,11 @@ test('normalizeRows lancia 502 se manca righe', () => {
   assert.throws(() => normalizeRows({}), e => e.status === 502)
   assert.throws(() => normalizeRows(null), e => e.status === 502)
   assert.deepEqual(normalizeRows({ righe: [] }), [])
+})
+
+test('parseAmount conserva il segno in stile contabile (meno finale, parentesi)', () => {
+  assert.equal(parseAmount('1.927,76-'), -1927.76)
+  assert.equal(parseAmount('(1.927,76)'), -1927.76)
+  assert.equal(parseAmount('-1.927,76'), -1927.76)
+  assert.equal(parseAmount('0,00-'), 0)
 })

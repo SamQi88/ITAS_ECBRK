@@ -1,4 +1,4 @@
-const { test } = require('node:test')
+const { test, mock } = require('node:test')
 const assert = require('node:assert/strict')
 const { createLlmClient } = require('../../srv/lib/llm')
 
@@ -61,4 +61,26 @@ test('HTTP non 2xx, JSON non valido e rete giù danno 502', async () => {
   await assert.rejects(createLlmClient({ config, fetchImpl: notJson }).extractPolicies({ text: 'x', images: [] }), e => e.status === 502)
   const down = async () => { throw new Error('ECONNREFUSED') }
   await assert.rejects(createLlmClient({ config, fetchImpl: down }).extractPolicies({ text: 'x', images: [] }), e => e.status === 502)
+})
+
+test('risposta troncata (finish_reason length): 502 e log diagnostico senza il contenuto', async () => {
+  const f = fakeFetch([auth, { match: '/chat/completions', reply: () => json(200, { choices: [{ finish_reason: 'length', message: { content: '{"righe":[{"contraente":"DATO SENSIBILE' } }], usage: { completion_tokens: 16000 } }) }])
+  const log = mock.method(console, 'error', () => {})
+  try {
+    await assert.rejects(createLlmClient({ config, fetchImpl: f }).extractPolicies({ text: 'x', images: [] }), e => e.status === 502)
+    const out = log.mock.calls.map(c => c.arguments.join(' ')).join(' | ')
+    assert.match(out, /length/)
+    assert.doesNotMatch(out, /DATO SENSIBILE/)
+  } finally { log.mock.restore() }
+})
+
+test('JSON non valido: 502 e log con lunghezza e finish_reason, senza il contenuto', async () => {
+  const f = fakeFetch([auth, { match: '/chat/completions', reply: () => json(200, { choices: [{ finish_reason: 'stop', message: { content: 'DATO SENSIBILE non json' } }] }) }])
+  const log = mock.method(console, 'error', () => {})
+  try {
+    await assert.rejects(createLlmClient({ config, fetchImpl: f }).extractPolicies({ text: 'x', images: [] }), e => e.status === 502)
+    const out = log.mock.calls.map(c => c.arguments.join(' ')).join(' | ')
+    assert.match(out, /stop/)
+    assert.doesNotMatch(out, /DATO SENSIBILE/)
+  } finally { log.mock.restore() }
 })

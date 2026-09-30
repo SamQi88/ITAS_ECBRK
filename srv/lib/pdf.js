@@ -23,8 +23,11 @@ async function extractContent (buffer) {
   }
   if (text.trim().length >= MIN_CHARS_PER_PAGE * pages) return { text, images: [] }
 
+  if (pages > MAX_IMAGE_PAGES) {
+    throw new HttpError(422, `Il PDF scansionato ha ${pages} pagine: il massimo consentito è ${MAX_IMAGE_PAGES} pagine`, 'TOO_MANY_PAGES')
+  }
   const images = []
-  for (let i = 0; i < Math.min(pages, MAX_IMAGE_PAGES); i++) {
+  for (let i = 0; i < pages; i++) {
     const pix = doc.loadPage(i).toPixmap(mupdf.Matrix.scale(2, 2), mupdf.ColorSpace.DeviceRGB, false, true)
     images.push(Buffer.from(pix.asPNG()))
   }
