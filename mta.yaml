@@ -1,0 +1,36 @@
+_schema-version: '3.3.0'
+ID: itas-ecbrk
+version: 1.0.0
+description: Estrazione rendiconti PDF con GPT-5.5 su SAP AI Core
+
+modules:
+  - name: itas-ecbrk-srv
+    type: nodejs
+    path: .
+    parameters:
+      buildpack: nodejs_buildpack
+      command: npm start
+      memory: 1024M
+      disk-quota: 1024M
+      instances: 1
+    properties:
+      DEPLOYMENT_ID: d5c6e9cb46489b9c
+      RESOURCE_GROUP: default
+    requires:
+      - name: itas-ecbrk-aicore
+    build-parameters:
+      builder: npm-ci
+      ignore:
+        - node_modules/
+        - test/
+        - docs/
+        - mta_archives/
+        - .env
+        - db.sqlite*
+        - gen/
+
+resources:
+  - name: itas-ecbrk-aicore
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: aicore-instance-name

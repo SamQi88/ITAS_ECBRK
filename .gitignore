@@ -19,3 +19,9 @@ mta_archives/
 @cds-models
 
 *_ui5.zip
+# App
+.env
+*.db
+db.sqlite*
+test/fixtures/
+.superpowers/
