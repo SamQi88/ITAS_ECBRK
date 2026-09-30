@@ -21,5 +21,7 @@ test('legge dal binding VCAP_SERVICES', () => {
 })
 
 test('segnala la variabile mancante', () => {
-  assert.throws(() => loadConfig({ AI_CORE_CLIENT_ID: 'id' }), e => e.status === 500 && /DEPLOYMENT_ID|AI_CORE_CLIENT_SECRET/.test(e.message))
+  assert.throws(() => loadConfig({ AI_CORE_CLIENT_ID: 'id' }), e => e.status === 500 && /AI_CORE_AUTH_URL/.test(e.message))
+  const tutteTranneDeployment = { AI_CORE_CLIENT_ID: 'id', AI_CORE_CLIENT_SECRET: 's', AI_CORE_AUTH_URL: 'u', AI_API_URL: 'a' }
+  assert.throws(() => loadConfig(tutteTranneDeployment), e => e.status === 500 && /DEPLOYMENT_ID/.test(e.message))
 })
