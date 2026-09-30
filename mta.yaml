@@ -16,8 +16,16 @@ modules:
     properties:
       DEPLOYMENT_ID: d5c6e9cb46489b9c
       RESOURCE_GROUP: default
+      AICORE_DESTINATION_NAME: SAP_AI_CORE_CROSS_SUB
+      # --- Parametri di autenticazione SAP AI Core ---
+      AI_API_URL: "https://api.ai.prod.eu-central-1.aws.ml.hana.ondemand.com"
+      AI_CORE_BASE_URL: "https://api.ai.prod.eu-central-1.aws.ml.hana.ondemand.com"
+      AI_CORE_AUTH_URL: "https://lab-ai-btp-demqquqm.authentication.eu10.hana.ondemand.com/oauth/token"
+      AI_CORE_CLIENT_ID: "sb-2d4a325b-9f56-4499-973c-79c45ab5e9d2!b534359|aicore!b540"
+      AI_CORE_CLIENT_SECRET: "a461ab30-e4b7-4716-8d58-d12018135bb6$6FkxR9a0U6f4Qny2KPLoKuUEZWA-SHJYNFFudpaIfNk="
+      AI_API_VERSION: "2024-12-01-preview"
     requires:
-      - name: itas-ecbrk-aicore
+      - name: itas-ecbrk-dest
     build-parameters:
       builder: npm-ci
       ignore:
@@ -30,7 +38,7 @@ modules:
         - gen/
 
 resources:
-  - name: itas-ecbrk-aicore
+  - name: itas-ecbrk-dest
     type: org.cloudfoundry.existing-service
     parameters:
-      service-name: aicore-instance-name
+      service-name: ai-core-destination
