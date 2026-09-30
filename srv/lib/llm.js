@@ -7,7 +7,7 @@ Rispondi SOLO con un oggetto JSON di questa forma:
 
 Regole:
 - Una voce per ogni riga di polizza, nell'ordine del documento. Non includere righe di totale, saldo o riporto.
-- dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata".
+- dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata" oppure "NS. RIF." .
 - contraente: colonna "Cliente" oppure "Contraente".
 - numeroPolizza: colonna "Nro Contratto" (se il valore è ripetuto dopo "||" tieni solo il primo) oppure "Polizza".
 - premi: "Premio Lordo" oppure "Premi" della riga, non il totale.

@@ -1,6 +1,6 @@
 namespace itas.ecbrk;
 
-@assert.unique: { hash: [HASH_SHA256] }
+/* @assert.unique: { hash: [HASH_SHA256] } */
 entity Documents {
   key ID_OPERAZIONE : UUID;
   NOME_DOCUMENTO    : String(255) not null;

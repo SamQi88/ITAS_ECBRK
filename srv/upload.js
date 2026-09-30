@@ -17,15 +17,19 @@ function cleanName (original) {
 }
 
 const fmtDate = ts => {
-  const d = ts ? new Date(ts) : new Date()
+  if (!ts) return 'in precedenza'
+  const d = new Date(ts)
+  if (isNaN(d.getTime())) return 'in precedenza'
   return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`
 }
+
+/* 
 const duplicate = doc => new HttpError(409, `Documento già caricato il ${fmtDate(doc && doc.DATA_CARICAMENTO)}`, 'DUPLICATE')
+*/
 
 function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: maxBytes, files: 1 } }).single('file')
   const { SELECT, INSERT } = cds.ql
-  const findByHash = hash => db.run(SELECT.one.from(DOC).columns('DATA_CARICAMENTO').where({ HASH_SHA256: hash }))
 
   return (req, res, next) => {
     upload(req, res, async err => {
@@ -42,15 +46,33 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
         const nome = cleanName(file.originalname)
         const hash = crypto.createHash('sha256').update(file.buffer).digest('hex')
 
-        const existing = await findByHash(hash)
+        // Usa l'istanza del servizio CDS del contesto o l'istanza db passata
+        const cdsDb = cds.db || db
+
+        // Cerchiamo se il file esiste GIÀ nel DB prima di fare qualsiasi nuovo inserimento
+        const existing = await cdsDb.run(
+          SELECT.one.from(DOC)
+            .columns('DATA_CARICAMENTO')
+            .where({ HASH_SHA256: hash })
+            .orderBy('DATA_CARICAMENTO desc')
+        )
+
+        /* Blocco originale disabilitato per non bloccare l'upload:
         if (existing) throw duplicate(existing)
+        */
+
+        // Generazione del messaggio di avviso
+        const alreadyUploaded = Boolean(existing)
+        const warning = alreadyUploaded 
+          ? `Documento già caricato il ${fmtDate(existing.DATA_CARICAMENTO)}` 
+          : null
 
         const righe = normalizeRows(await extract(file.buffer))
         if (!righe.length) throw new HttpError(422, 'Nessuna polizza trovata', 'NO_ROWS')
 
         const id = cds.utils.uuid()
         try {
-          await db.tx(async tx => {
+          await cdsDb.tx(async tx => {
             await tx.run(INSERT.into(DOC).entries({ ID_OPERAZIONE: id, NOME_DOCUMENTO: nome, HASH_SHA256: hash }))
             await tx.run(INSERT.into(POL).entries(righe.map(r => ({
               ID_OPERAZIONE: id, NOME_DOCUMENTO: nome,
@@ -59,10 +81,19 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
             }))))
           })
         } catch (e) {
+          /*
           if (/UNIQUE/i.test(e.message)) throw duplicate(await findByHash(hash))
+          */
           throw e
         }
-        res.status(201).json({ idOperazione: id, nomeDocumento: nome, righe })
+
+        res.status(201).json({ 
+          idOperazione: id, 
+          nomeDocumento: nome, 
+          alreadyUploaded,
+          warning,
+          righe 
+        })
       } catch (e) { next(e) }
     })
   }
