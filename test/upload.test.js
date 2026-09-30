@@ -20,6 +20,7 @@ async function start ({ extract, maxBytes } = {}) {
   app.post('/upload', createUploadHandler({ db, extract: async b => { calls.n++; return ex(b) }, maxBytes }))
   app.use(errorHandler)
   const server = await new Promise(r => { const s = app.listen(0, () => r(s)) })
+  server.unref() // un test fallito prima di close() non deve tenere vivo il processo
   const url = `http://127.0.0.1:${server.address().port}/upload`
   const post = (buf, name = 'a.pdf') => {
     const fd = new FormData()
@@ -45,24 +46,31 @@ test('upload valido: 201, righe salvate con id_operazione e nome documento', asy
   t.close()
 })
 
-test('duplicato: 409, messaggio con data, modello non chiamato di nuovo', async () => {
+test('duplicato: 201 con warning e data, il file viene elaborato e salvato di nuovo', async () => {
   const t = await start()
   const pdf = makePdf('due')
-  assert.equal((await t.post(pdf, 'a.pdf')).status, 201)
+  const first = await (await t.post(pdf, 'a.pdf')).json()
+  assert.equal(first.alreadyUploaded, false)
+  assert.equal(first.warning, null)
   const res = await t.post(pdf, 'rinominato.pdf')
-  assert.equal(res.status, 409)
-  assert.match((await res.json()).error.message, /già caricato il \d{2}\/\d{2}\/\d{4}/)
-  assert.equal(t.calls.n, 1)
-  assert.equal(await t.count('itas.ecbrk.Documents'), 1)
+  assert.equal(res.status, 201)
+  const body = await res.json()
+  assert.equal(body.alreadyUploaded, true)
+  assert.match(body.warning, /già caricato il \d{2}\/\d{2}\/\d{4}/)
+  assert.equal(body.righe.length, 2)
+  assert.notEqual(body.idOperazione, first.idOperazione)
+  assert.equal(t.calls.n, 2)
+  assert.equal(await t.count('itas.ecbrk.Documents'), 2)
+  assert.equal(await t.count('itas.ecbrk.Policies'), 4)
   t.close()
 })
 
-test('due upload identici in parallelo: uno 201 e uno 409', async () => {
+test('due upload identici in parallelo: entrambi 201, nessun errore', async () => {
   const t = await start({ extract: async () => { await new Promise(r => setTimeout(r, 50)); return ROWS } })
   const pdf = makePdf('tre')
   const res = await Promise.all([t.post(pdf), t.post(pdf)])
-  assert.deepEqual(res.map(r => r.status).sort(), [201, 409])
-  assert.equal(await t.count('itas.ecbrk.Documents'), 1)
+  assert.deepEqual(res.map(r => r.status), [201, 201])
+  assert.equal(await t.count('itas.ecbrk.Documents'), 2)
   t.close()
 })
 

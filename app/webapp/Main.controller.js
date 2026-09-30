@@ -58,10 +58,11 @@ sap.ui.define([
         const res = await fetch("/upload", { method: "POST", body: fd });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-          return fail(res.status === 409 ? MessageBox.warning : MessageBox.error,
-            (body.error && body.error.message) || "Errore durante l'elaborazione");
+          return fail(MessageBox.error, (body.error && body.error.message) || "Errore durante l'elaborazione");
         }
         model.setData({ fileName: file.name, rows: body.righe, count: body.righe.length, busy: false, emptyText: "Nessun dato" });
+        // documento già caricato: il file viene comunque elaborato, l'utente ne viene solo avvisato
+        if (body.warning) MessageBox.warning(body.warning);
       } catch (e) {
         fail(MessageBox.error, "Impossibile contattare il server");
       }

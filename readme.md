@@ -34,7 +34,8 @@ cf deploy mta_archives/itas-ecbrk_1.0.0.mtar
 
 - **Nessuna autenticazione:** app interna, pensata per essere mostrata in riunione. Chiunque abbia l'URL può caricare documenti, consumare AI Core e leggere tutti i dati estratti (nomi dei contraenti, polizze, importi) dall'OData `/odata/archivio`. Non esporre l'URL al di fuori della demo.
 - **SQLite senza persistenza su CF:** il filesystem del container è effimero, quindi i dati (e l'elenco dei documenti già caricati) si perdono a ogni restart o restage. L'app gira in una sola istanza.
-- **Duplicati:** il controllo confronta l'hash SHA-256 del file. Un PDF rigenerato con contenuto uguale ma byte diversi viene elaborato come nuovo.
+- **Duplicati:** il confronto usa l'hash SHA-256 del file. Un documento già caricato non viene bloccato: viene elaborato e salvato di nuovo, e l'utente riceve un avviso con la data del primo caricamento. Un PDF rigenerato con contenuto uguale ma byte diversi non genera l'avviso.
+- **Database esistente:** all'avvio `srv/init-db.js` aggiorna un `db.sqlite` creato con lo schema vecchio (con vincolo di univocità sull'hash), conservandone i dati e lasciando una copia di sicurezza `db.sqlite.bak-*`.
 - **Limiti:** file PDF fino a 10 MB. Nelle tabelle lunghe il modello può saltare righe: controllare il numero di righe estratte accanto al titolo della tabella.
 - **Licenza:** la libreria `mupdf` (estrazione di testo e immagini dal PDF) è AGPL, accettabile per una demo interna.
 - **Segreti:** nessun segreto nel repository.

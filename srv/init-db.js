@@ -1,14 +1,10 @@
 // Crea il file SQLite con lo schema se non esiste (su CF il filesystem è effimero: riparte vuoto a ogni restart)
-const fs = require('node:fs')
+// e aggiorna un file creato con lo schema vecchio conservandone i dati
 const cds = require('@sap/cds')
+const { initDb } = require('./lib/init-db')
 
-async function main () {
-  const file = cds.env.requires.db.credentials.url
-  if (fs.existsSync(file)) return
-  const db = await cds.connect.to('db')
-  await cds.deploy('*').to(db)
-  await db.disconnect()
-  console.log(`[init-db] creato ${file}`)
-}
+const file = cds.env.requires.db.credentials.url
 
-main().catch(e => { console.error(e); process.exit(1) })
+initDb(file)
+  .then(r => { if (r.created) console.log(`[init-db] creato ${file}`); if (r.migrated) console.log(`[init-db] aggiornato ${file} (dati conservati, copia di sicurezza ${file}.bak-*)`) })
+  .catch(e => { console.error(e); process.exit(1) })

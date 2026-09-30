@@ -17,12 +17,13 @@ test('Documents e Policies si salvano e rileggono', async () => {
   assert.equal(rows[0].DATA_EFFETTO, null)
 })
 
-test('HASH_SHA256 è univoco', async () => {
+test('HASH_SHA256 non è univoco: lo stesso file può essere salvato più volte', async () => {
   const db = await memDb()
-  const { INSERT } = cds.ql
+  const { INSERT, SELECT } = cds.ql
   const mk = () => ({ ID_OPERAZIONE: cds.utils.uuid(), NOME_DOCUMENTO: 'a.pdf', HASH_SHA256: 'same' })
   await db.run(INSERT.into('itas.ecbrk.Documents').entries(mk()))
-  await assert.rejects(db.run(INSERT.into('itas.ecbrk.Documents').entries(mk())))
+  await db.run(INSERT.into('itas.ecbrk.Documents').entries(mk()))
+  assert.equal((await db.run(SELECT.from('itas.ecbrk.Documents'))).length, 2)
 })
 
 test('ogni chiamata di memDb restituisce un db pulito', async () => {

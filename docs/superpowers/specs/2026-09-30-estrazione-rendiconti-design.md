@@ -21,7 +21,7 @@ Criteri di successo:
 - % di accuratezza: **non calcolata**. Non c'è la colonna nel DB né nella UI.
 - Persistenza: SQLite su file, anche su CF. I dati si perdono a restart/restage: accettato (demo). Una sola istanza.
 - Autenticazione: nessuna (app interna, mostrata in riunione). Da dichiarare nel README.
-- Duplicati: confronto hash SHA-256 del contenuto del file, non del nome.
+- Duplicati: confronto hash SHA-256 del contenuto del file, non del nome. Il duplicato **non blocca** l'elaborazione (modifica del 2026-09-30): il file viene elaborato e salvato di nuovo e l'utente riceve solo un avviso.
 - Fuori scope: storico documenti, modifica campi, export, verifica automatica dei totali.
 
 ## Modello dati
@@ -58,7 +58,7 @@ Formati: date `YYYY-MM-DD` (convertite da `gg/mm/aaaa`), importi decimali (`5.72
 
 1. L'utente sceglie il PDF; la preview appare subito a sinistra (dal browser, il server non conserva il PDF).
 2. Il browser invia il file a `POST /upload`.
-3. Il backend calcola l'hash. Se esiste già in `Documents`: `409` con messaggio "Documento già caricato il gg/mm/aaaa"; stop, nessuna chiamata al modello.
+3. Il backend calcola l'hash. Se esiste già in `Documents`, l'elaborazione prosegue e la risposta contiene `alreadyUploaded: true` e `warning: "Documento già caricato il gg/mm/aaaa"` (data del primo caricamento più recente); l'hash non ha vincolo di univocità.
 4. Estrazione del testo dal PDF. Se è sotto soglia (circa 100 caratteri per pagina, scansione), le pagine diventano immagini PNG.
 5. Chiamata a GPT-5.5 su AI Core con testo o immagini, richiesta di solo JSON con un array di righe.
 6. Validazione del JSON; salvataggio di documento e righe in un'unica transazione.
@@ -85,7 +85,7 @@ Chiamata al modello:
 Errori, sempre con messaggio chiaro per l'utente:
 
 - File non PDF o oltre 10 MB: rifiutato subito.
-- Duplicato: `409`.
+- Duplicato: nessun errore, `201` con `warning` (vedi flusso).
 - AI Core non raggiungibile o risposta non valida: `502`, nessun salvataggio, dettaglio nei log.
 - Nessuna riga trovata: messaggio "Nessuna polizza trovata", nessun documento salvato.
 
@@ -98,7 +98,7 @@ Limite noto: il modello può saltare righe nelle tabelle lunghe. La UI mostra il
 - Destra (circa 50%): titolo "Campi estratti (N)" e tabella `sap.m.Table` con Data effetto, Contraente, Numero polizza, Premi, Provvigioni, Data incasso. Importi allineati a destra in euro.
 - `Splitter` ridimensionabile tra i due riquadri.
 - Durante l'elaborazione: indicatore di caricamento, pulsante disabilitato, messaggio "Elaborazione in corso…".
-- Duplicato: `MessageBox` di avviso; la preview resta, la tabella non cambia.
+- Duplicato: la tabella mostra le righe estratte e compare un `MessageBox` di avviso con la data del primo caricamento.
 - Altri errori: `MessageBox` di errore senza dettagli tecnici.
 - Campo mancante: cella vuota.
 - Al reload della pagina tabella e preview ripartono vuote (i dati restano nel DB).
