@@ -4,7 +4,7 @@
   "description": "Welcome to your new CAP project.",
   "main": "index.js",
   "scripts": {
-    "start": "cds-serve",
+    "start": "node srv/init-db.js && cds-serve",
     "watch": "cds watch",
     "test": "node --test \"test/**/*.test.js\""
   },
