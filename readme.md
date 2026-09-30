@@ -1,22 +1,40 @@
-# Getting Started
+# Estrazione rendiconti provvigionali
 
-Welcome to your new CAP project.
+App demo (SAP CAP Node.js + UI5) che carica un PDF di rendiconto provvigionale, estrae con GPT-5.5 (SAP AI Core) una riga per polizza e la salva in SQLite.
 
-It contains these folders and files, following our recommended project layout:
+Campi estratti per ogni riga: data effetto, contraente, numero polizza, premi, provvigioni, data incasso. Ogni riga è salvata con `ID_OPERAZIONE` e nome del documento.
 
-File or Folder | Purpose
----------|----------
-`app/` | content for UI frontends goes here
-`db/` | your domain models and data go here
-`srv/` | your service models and code go here
-`readme.md` | this getting started guide
+La pagina mostra la preview del PDF a sinistra e la tabella dei campi estratti a destra. I PDF con testo selezionabile vengono letti come testo; le scansioni vengono inviate al modello come immagini.
 
-## Next Steps
+## Sviluppo locale
 
-- Open a new terminal and run `cds watch`
-- (in VS Code simply choose _**Terminal** > Run Task > cds watch_)
-- Start with your domain model, in a CDS file in `db/`
+```bash
+npm install
+cp .env.example .env     # poi compilare i valori (vedi sotto)
+npm start                # http://localhost:4004
+npm test
+```
 
-## Learn More
+Valori di `.env`: `AI_CORE_CLIENT_ID`, `AI_CORE_CLIENT_SECRET`, `AI_CORE_AUTH_URL` (`clientid`, `clientsecret`, `url` della service key di AI Core), `AI_API_URL` (`serviceurls.AI_API_URL`), `DEPLOYMENT_ID` (deployment GPT-5.5 di AI Core), `RESOURCE_GROUP` (default `default`). Il file `.env` non è versionato.
 
-Learn more at <https://cap.cloud.sap>.
+Il database è il file `db.sqlite`, creato all'avvio se non esiste. L'OData in sola lettura è su `/odata/archivio` (`Documents`, `Policies`).
+
+## Deploy su Cloud Foundry
+
+In `mta.yaml` sostituire `aicore-instance-name` con il nome dell'istanza AI Core mostrato da `cf services`. Se l'istanza non è visibile nello spazio di deploy, togliere `requires` e la sezione `resources` e impostare le credenziali dopo il deploy con `cf set-env itas-ecbrk-srv <VARIABILE> <valore>` (le variabili di `.env.example`), poi `cf restage itas-ecbrk-srv`.
+
+```bash
+npm install -g mbt
+mbt build
+cf login
+cf deploy mta_archives/itas-ecbrk_1.0.0.mtar
+```
+
+## Note
+
+- **Nessuna autenticazione:** app interna, pensata per essere mostrata in riunione. Chiunque abbia l'URL può caricare documenti e consumare AI Core.
+- **SQLite senza persistenza su CF:** il filesystem del container è effimero, quindi i dati (e l'elenco dei documenti già caricati) si perdono a ogni restart o restage. L'app gira in una sola istanza.
+- **Duplicati:** il controllo confronta l'hash SHA-256 del file. Un PDF rigenerato con contenuto uguale ma byte diversi viene elaborato come nuovo.
+- **Limiti:** file PDF fino a 10 MB. Nelle tabelle lunghe il modello può saltare righe: controllare il numero di righe estratte accanto al titolo della tabella.
+- **Licenza:** la libreria `mupdf` (estrazione di testo e immagini dal PDF) è AGPL, accettabile per una demo interna.
+- **Segreti:** nessun segreto nel repository.
