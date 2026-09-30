@@ -1305,7 +1305,7 @@ Copiare `.env.example` in `.env` e compilarlo con la service key di AI Core forn
 - [ ] **Step 2: Provare l'upload di AON 636016**
 
 Run: `npm start`, aprire `http://localhost:4004/` e caricare `AON 636016.pdf`.
-Expected: 10 righe. La prima: data effetto 31/01/2026, contraente Hünnebeck Italia SpA, polizza `M16067645`, premi 5.725,73 €, provvigioni 444,94 €, data incasso 28/07/2026. L'ultima: Sicoma S.r.l., premi 1.354,04 €, provvigioni 221,52 €. Nessuna riga di totale. La preview a sinistra mostra il PDF.
+Expected: 11 righe (5 a pagina 1, 6 a pagina 2; somma premi 34.265,22 come il totale del documento). La prima: data effetto 31/01/2026, contraente Hünnebeck Italia SpA, polizza `M16067645`, premi 5.725,73 €, provvigioni 444,94 €, data incasso 28/07/2026. L'ultima: Sicoma S.r.l., premi 1.354,04 €, provvigioni 221,52 €. Nessuna riga di totale. La preview a sinistra mostra il PDF.
 
 - [ ] **Step 3: Provare l'upload di IBC VITA (scansione)**
 
@@ -1323,7 +1323,7 @@ Expected: avviso "Documento già caricato il gg/mm/aaaa", tabella invariata, nes
 node -e "const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync('db.sqlite');console.log(d.prepare('select count(*) n from itas_ecbrk_Documents').get(), d.prepare('select count(*) n from itas_ecbrk_Policies').get())"
 ```
 
-Expected: 2 documenti e 13 righe di polizza.
+Expected: 2 documenti e 14 righe di polizza.
 
 - [ ] **Step 6: Correggere se necessario**
 
