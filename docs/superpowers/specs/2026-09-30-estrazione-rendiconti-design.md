@@ -79,8 +79,8 @@ Chiamata al modello:
 
 - `AI_API_URL`, `DEPLOYMENT_ID`, `RESOURCE_GROUP` da configurazione, mai nel codice.
 - Il prompt contiene il mapping sopra e chiede solo JSON.
-- Output strutturato (JSON schema) se il deployment lo supporta; altrimenti il JSON viene estratto dalla risposta e validato. Da verificare nel primo test.
-- Temperatura bassa.
+- `response_format: json_object` con oggetto `{"righe": [...]}`; il JSON viene validato dal backend. JSON schema strict da rivalutare solo se serve, al primo test.
+- Nessun parametro `temperature`: i modelli GPT-5 accettano solo il valore di default.
 
 Errori, sempre con messaggio chiaro per l'utente:
 
