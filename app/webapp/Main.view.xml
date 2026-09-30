@@ -13,7 +13,7 @@
         </core:HTML>
         <ScrollContainer height="100%" vertical="true">
           <layoutData><l:SplitterLayoutData size="auto"/></layoutData>
-          <Title text="Campi estratti ({/count})" class="sapUiSmallMargin"/>
+          <Title text="Posizioni di Incasso Estratte ({/count})" class="sapUiSmallMargin"/>
           <Table items="{/rows}" busy="{/busy}" busyIndicatorDelay="0" noDataText="{/emptyText}">
             <columns>
               <Column><Text text="Data effetto"/></Column>
