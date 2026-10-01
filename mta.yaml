@@ -15,7 +15,7 @@ modules:
       instances: 1
     properties:
       # --- Scelta del modello: openai | google | anthropic (un deployment per famiglia) ---
-      LLM_PROVIDER: openai
+      LLM_PROVIDER: google
       DEPLOYMENT_ID_OPENAI: d5c6e9cb46489b9c
       DEPLOYMENT_ID_GOOGLE: d3e2bd1087b50450
       GOOGLE_MODEL: gemini-3.8-flash
