@@ -16,15 +16,30 @@ Regole:
 - Copia importi e date come sono scritti nel documento. Se un valore manca usa null. Non inventare valori.`
 
 // il contenuto della risposta contiene dati di clienti: nei log solo metadati
-function parseModelJson (content, choice, usage) {
+function parseModelJson (content, finishReason, usage) {
   const s = String(content ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-  try { return JSON.parse(s) } catch {
-    console.error(`[llm] JSON non valido: finish_reason=${choice?.finish_reason}, lunghezza=${s.length}, usage=${JSON.stringify(usage)}`)
-    throw new HttpError(502, 'Risposta del modello non valida', 'BAD_MODEL_RESPONSE')
+  try { return JSON.parse(s) } catch {}
+  // alcuni modelli (Claude) aggiungono testo prima o dopo il JSON: si prova dal primo { all'ultimo }
+  const from = s.indexOf('{')
+  const to = s.lastIndexOf('}')
+  if (from !== -1 && to > from) {
+    try { return JSON.parse(s.slice(from, to + 1)) } catch {}
   }
+  console.error(`[llm] JSON non valido: finish_reason=${finishReason}, lunghezza=${s.length}, usage=${JSON.stringify(usage)}`)
+  throw new HttpError(502, 'Risposta del modello non valida', 'BAD_MODEL_RESPONSE')
+}
+
+// un adattatore per famiglia di modelli: costruisce la richiesta e legge la risposta
+const PROVIDERS = {
+  openai: require('./providers/openai'),
+  google: require('./providers/google'),
+  anthropic: require('./providers/anthropic')
 }
 
 function createLlmClient ({ config, fetchImpl = fetch }) {
+  const providerName = config.provider || 'openai'
+  const provider = PROVIDERS[providerName]
+  if (!provider) throw new HttpError(500, `Famiglia di modelli non supportata: ${providerName}`, 'CONFIG')
   let token, tokenExp = 0
 
   async function getToken () {
@@ -43,35 +58,29 @@ function createLlmClient ({ config, fetchImpl = fetch }) {
   }
 
   async function extractPolicies ({ text, images }) {
-    const userContent = images && images.length
-      ? [{ type: 'text', text: 'Estrai le righe di polizza dalle pagine allegate.' },
-         ...images.map(b => ({ type: 'image_url', image_url: { url: 'data:image/png;base64,' + Buffer.from(b).toString('base64') } }))]
+    const instruction = images && images.length
+      ? 'Estrai le righe di polizza dalle pagine allegate.'
       : `Estrai le righe di polizza dal seguente testo del documento:\n\n${text}`
+    const { url, body } = provider.buildRequest({ config, system: SYSTEM_PROMPT, instruction, images })
     let data
     try {
-      const res = await fetchImpl(
-        `${config.apiUrl}/v2/inference/deployments/${config.deploymentId}/chat/completions?api-version=${config.apiVersion}`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${await getToken()}`, 'AI-Resource-Group': config.resourceGroup, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userContent }],
-            response_format: { type: 'json_object' },
-            max_completion_tokens: 16000
-          })
-        })
-      if (!res.ok) throw new Error(`chat HTTP ${res.status}: ${await res.text()}`)
+      const res = await fetchImpl(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await getToken()}`, 'AI-Resource-Group': config.resourceGroup, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      if (!res.ok) throw new Error(`${providerName} HTTP ${res.status}: ${await res.text()}`)
       data = await res.json()
     } catch (err) {
       console.error('[llm]', err.message)
       throw new HttpError(502, 'Servizio di estrazione non disponibile', 'LLM_UNAVAILABLE')
     }
-    const choice = data.choices?.[0]
-    if (choice?.finish_reason === 'length') {
-      console.error(`[llm] risposta troncata: finish_reason=length, usage=${JSON.stringify(data.usage)}`)
+    const { content, finishReason, truncated, usage } = provider.parseResponse(data)
+    if (truncated) {
+      console.error(`[llm] risposta troncata: finish_reason=${finishReason}, usage=${JSON.stringify(usage)}`)
       throw new HttpError(502, 'Risposta del modello troncata: documento troppo lungo', 'MODEL_TRUNCATED')
     }
-    return parseModelJson(choice?.message?.content, choice, data.usage)
+    return parseModelJson(content, finishReason, usage)
   }
 
   return { extractPolicies }

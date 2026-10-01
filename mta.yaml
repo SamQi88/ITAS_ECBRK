@@ -14,7 +14,12 @@ modules:
       disk-quota: 1024M
       instances: 1
     properties:
-      DEPLOYMENT_ID: d5c6e9cb46489b9c
+      # --- Scelta del modello: openai | google | anthropic (un deployment per famiglia) ---
+      LLM_PROVIDER: openai
+      DEPLOYMENT_ID_OPENAI: d5c6e9cb46489b9c
+      DEPLOYMENT_ID_GOOGLE: d3e2bd1087b50450
+      GOOGLE_MODEL: gemini-3.8-flash
+      DEPLOYMENT_ID_ANTHROPIC: d0758f19233c0b41
       RESOURCE_GROUP: default
       AICORE_DESTINATION_NAME: SAP_AI_CORE_CROSS_SUB
       # --- Parametri di autenticazione SAP AI Core ---

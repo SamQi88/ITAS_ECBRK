@@ -1,6 +1,6 @@
 # Estrazione rendiconti provvigionali
 
-App demo (SAP CAP Node.js + UI5) che carica un PDF di rendiconto provvigionale, estrae con GPT-5.5 (SAP AI Core) una riga per polizza e la salva in SQLite.
+App demo (SAP CAP Node.js + UI5) che carica un PDF di rendiconto provvigionale, estrae con un modello di SAP AI Core (OpenAI, Google Gemini o Anthropic Claude, a scelta) una riga per polizza e la salva in SQLite.
 
 Campi estratti per ogni riga: data effetto, contraente, numero polizza, premi, provvigioni, data incasso. Ogni riga è salvata con `ID_OPERAZIONE` e nome del documento.
 
@@ -15,7 +15,23 @@ npm start                # http://localhost:4004
 npm test
 ```
 
-Valori di `.env`: `AI_CORE_CLIENT_ID`, `AI_CORE_CLIENT_SECRET`, `AI_CORE_AUTH_URL` (`clientid`, `clientsecret`, `url` della service key di AI Core), `AI_API_URL` (`serviceurls.AI_API_URL`), `DEPLOYMENT_ID` (deployment GPT-5.5 di AI Core), `RESOURCE_GROUP` (default `default`). Il file `.env` non è versionato.
+Valori di `.env`: `AI_CORE_CLIENT_ID`, `AI_CORE_CLIENT_SECRET`, `AI_CORE_AUTH_URL` (`clientid`, `clientsecret`, `url` della service key di AI Core), `AI_API_URL` (`serviceurls.AI_API_URL`), `RESOURCE_GROUP` (default `default`) e le variabili del modello descritte sotto. Il file `.env` non è versionato.
+
+## Scelta del modello
+
+Il modello si sceglie solo da configurazione, senza toccare il codice: la variabile `LLM_PROVIDER` indica la famiglia e ogni famiglia ha il suo deployment di AI Core.
+
+| `LLM_PROVIDER` | Deployment | Variabili |
+|---|---|---|
+| `openai` (default) | GPT-5.5, esecutore `azure-openai` | `DEPLOYMENT_ID_OPENAI` (vale ancora anche `DEPLOYMENT_ID`) |
+| `google` | Gemini, esecutore `gcp-vertexai` | `DEPLOYMENT_ID_GOOGLE` e `GOOGLE_MODEL` (per esempio `gemini-3.8-flash`, fa parte dell'URL) |
+| `anthropic` | Claude, esecutore `aws-bedrock` | `DEPLOYMENT_ID_ANTHROPIC` (API Converse) |
+
+Su Cloud Foundry si cambia `LLM_PROVIDER` in `mta.yaml` e si rifà il deploy, oppure `cf set-env itas-ecbrk-srv LLM_PROVIDER google` seguito da `cf restage itas-ecbrk-srv`. Per usare un altro modello della stessa famiglia basta un altro ID di deployment (e `GOOGLE_MODEL` per Gemini).
+
+Il codice che dipende dal formato di ciascuna famiglia sta in `srv/lib/providers/` (un file per famiglia). Per aggiungerne una si crea un file con `buildRequest` e `parseResponse` e lo si registra in `srv/lib/llm.js`.
+
+Verificato con `AON 636016.pdf` (11 righe, testo) e `IBC VITA.PDF` (3 righe, scansione) su tutte e tre le famiglie: righe e totali di premi e provvigioni coincidono con quelli dei documenti.
 
 Il database è il file `db.sqlite`, creato all'avvio se non esiste. L'OData in sola lettura è su `/odata/archivio` (`Documents`, `Policies`).
 
