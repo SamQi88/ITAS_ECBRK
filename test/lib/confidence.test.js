@@ -49,7 +49,35 @@ test('importo zero è un valore letto (completo); null no', () => {
   const c = computeConfidence({ righe: [row({ premi: 0, provvigioni: 0 })], totali: { premi: 0, provvigioni: 0 } })
   assert.equal(c.completezza, 100)
   assert.equal(c.score, 100)
-  assert.equal(computeConfidence({ righe: [row({ premi: null })], totali: { premi: null, provvigioni: null } }).completezza, 83)
+})
+
+test('campo assente in tutto il documento: non è considerato nel calcolo e viene segnalato', () => {
+  // nessuna riga ha la data di effetto: il documento non la riporta
+  const righe = [row({ dataEffetto: null }), row({ dataEffetto: null }), row({ dataEffetto: null })]
+  const c = computeConfidence({ righe, totali: { premi: 300, provvigioni: 30 } })
+  assert.equal(c.completezza, 100) // prima: 83, penalizzava un'informazione che non c'è
+  assert.equal(c.score, 100)
+  assert.deepEqual(c.campiAssenti, ['dataEffetto'])
+})
+
+test('più campi assenti nel documento: tutti esclusi, quelli presenti restano controllati', () => {
+  const righe = [row({ dataEffetto: null, dataIncasso: null }), row({ dataEffetto: null, dataIncasso: null, contraente: null })]
+  const c = computeConfidence({ righe, totali: {} })
+  assert.deepEqual(c.campiAssenti, ['dataEffetto', 'dataIncasso'])
+  // restano 4 campi per riga (contraente, polizza, premi, provvigioni): 1 mancante su 8
+  assert.equal(c.completezza, 88)
+  assert.equal(c.score, 88)
+})
+
+test('campo presente solo in alcune righe: resta una lacuna e abbassa il punteggio', () => {
+  const righe = [row(), row({ dataEffetto: null }), row({ dataEffetto: null })]
+  const c = computeConfidence({ righe, totali: { premi: 600, provvigioni: 60 } })
+  assert.deepEqual(c.campiAssenti, [])
+  assert.equal(c.completezza, 89) // 16 campi su 18
+})
+
+test('nessun campo assente: elenco vuoto', () => {
+  assert.deepEqual(computeConfidence({ righe: rows3, totali: {} }).campiAssenti, [])
 })
 
 test('tolleranza di 2 centesimi sui totali; oltre, non quadra', () => {

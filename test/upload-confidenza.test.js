@@ -53,3 +53,12 @@ test('il documento non riporta i totali: confidenza dalla sola completezza, dett
   assert.equal(body.confidenza.provvigioni, null)
   t.close()
 })
+
+test('campo che il documento non riporta: non penalizza e viene indicato nella risposta', async () => {
+  const senzaData = TRE.map(r => ({ ...r, dataEffetto: null }))
+  const t = await start({ righe: senzaData, totalePremiDocumento: '600,00', totaleProvvigioniDocumento: '60,00' })
+  const body = await (await t.post(makePdf('conf quattro'))).json()
+  assert.equal(body.confidenza.score, 100)
+  assert.deepEqual(body.confidenza.campiAssenti, ['dataEffetto'])
+  t.close()
+})

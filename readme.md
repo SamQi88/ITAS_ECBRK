@@ -43,7 +43,7 @@ A destra del titolo "Posizioni estratto conto" compare una percentuale unica per
 
 | Controllo | Peso | Come |
 |---|---|---|
-| Completezza | 40% | quota dei sei campi di ogni riga letti e validi |
+| Completezza | 40% | quota dei campi di ogni riga letti e validi; un campo vuoto in tutte le righe è un'informazione che il documento non riporta e non viene considerato (il tooltip lo indica); un campo presente solo in alcune righe è una lacuna e abbassa il punteggio |
 | Quadratura premi | 30% | somma delle righe uguale al totale premi stampato nel documento (tolleranza 2 centesimi) |
 | Quadratura provvigioni | 30% | come sopra, per le provvigioni |
 

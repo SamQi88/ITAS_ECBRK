@@ -63,7 +63,10 @@ sap.ui.define([
           ? label + ": " + ok + " con il totale del documento (" + amount.format(t.documento) + ")"
           : label + ": " + nok + ", somma delle righe " + amount.format(t.righe) + " contro " + amount.format(t.documento) + " nel documento";
       };
+      const nomi = { dataEffetto: "data effetto", contraente: "contraente", numeroPolizza: "numero polizza", premi: "premi", provvigioni: "provvigioni", dataIncasso: "data incasso" };
+      const assenti = (c.campiAssenti || []).map((f) => nomi[f] || f);
       return "Indice di coerenza dell'estrazione, non una probabilità del modello. Completezza dei campi: " + c.completezza + "%. " +
+        (assenti.length ? "Non presenti nel documento e quindi non considerati: " + assenti.join(", ") + ". " : "") +
         check("Premi", "quadrati", "NON quadrati", c.premi) + ". " + check("Provvigioni", "quadrate", "NON quadrate", c.provvigioni) + ".";
     },
 
