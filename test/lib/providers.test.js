@@ -17,6 +17,7 @@ test('openai: URL, corpo con testo e lettura della risposta', () => {
   assert.deepEqual(body.response_format, { type: 'json_object' })
   assert.equal(body.max_completion_tokens, 16000)
   assert.equal(body.temperature, undefined)
+  assert.equal(body.reasoning_effort, 'low') // meno ragionamento = risposta più veloce, stessa precisione sui nostri PDF
   const r = openai.parseResponse({ choices: [{ finish_reason: 'stop', message: { content: '{"a":1}' } }], usage: { total_tokens: 5 } })
   assert.deepEqual(r, { content: '{"a":1}', finishReason: 'stop', truncated: false, usage: { total_tokens: 5 } })
 })
@@ -38,6 +39,7 @@ test('google: URL con modello, istruzioni di sistema, JSON mode e testo', () => 
   assert.deepEqual(body.contents, [{ role: 'user', parts: [{ text: 'estrai dal testo X' }] }])
   assert.equal(body.generationConfig.responseMimeType, 'application/json')
   assert.equal(body.generationConfig.maxOutputTokens, 16000)
+  assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingLevel: 'low' })
 })
 
 test('google: con immagini usa inlineData base64', () => {
@@ -60,6 +62,7 @@ test('anthropic: URL converse, system, testo e limite di token', () => {
   assert.deepEqual(body.system, [{ text: SYS }])
   assert.deepEqual(body.messages, [{ role: 'user', content: [{ text: 'estrai dal testo X' }] }])
   assert.equal(body.inferenceConfig.maxTokens, 16000)
+  assert.equal(body.additionalModelRequestFields, undefined) // Claude non ragiona: nessun parametro da ridurre
 })
 
 test('anthropic: con immagini usa image/format png con byte base64', () => {

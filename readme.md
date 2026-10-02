@@ -4,7 +4,7 @@ App demo (SAP CAP Node.js + UI5) che carica un PDF di rendiconto provvigionale, 
 
 Campi estratti per ogni riga: data effetto, contraente, numero polizza, premi, provvigioni, data incasso. Ogni riga è salvata con `ID_OPERAZIONE` e nome del documento.
 
-La pagina mostra la preview del PDF a sinistra e la tabella dei campi estratti a destra. I PDF con testo selezionabile vengono letti come testo; le scansioni vengono inviate al modello come immagini.
+La pagina mostra la preview del PDF a sinistra e la tabella dei campi estratti a destra. Sopra la tabella compaiono "Totale premi" e "Totale provvigioni", calcolati come somma degli importi letti dall'IA (non i totali scritti nel PDF), e "Ritenuta d'acconto", l'importo complessivo letto dal documento, solo se presente (salvato in `Documents.RITENUTA_ACCONTO`). In alto a destra c'è il nome del modello IA in uso. I PDF con testo selezionabile vengono letti come testo; le scansioni vengono inviate al modello come immagini.
 
 ## Sviluppo locale
 
@@ -31,7 +31,20 @@ Su Cloud Foundry si cambia `LLM_PROVIDER` in `mta.yaml` e si rifà il deploy, op
 
 Il codice che dipende dal formato di ciascuna famiglia sta in `srv/lib/providers/` (un file per famiglia). Per aggiungerne una si crea un file con `buildRequest` e `parseResponse` e lo si registra in `srv/lib/llm.js`.
 
-Verificato con `AON 636016.pdf` (11 righe, testo) e `IBC VITA.PDF` (3 righe, scansione) su tutte e tre le famiglie: righe e totali di premi e provvigioni coincidono con quelli dei documenti.
+Il nome mostrato in alto a destra viene da `MODEL_LABEL_OPENAI`, `MODEL_LABEL_GOOGLE` e `MODEL_LABEL_ANTHROPIC` (in `mta.yaml`); se mancano si usa un nome generico ("OpenAI GPT", "Google Gemini", "Anthropic Claude"). Si aggiorna insieme a `LLM_PROVIDER` quando cambi deployment.
+
+Verificato con `AON 636016.pdf` (11 righe, testo) e `IBC VITA.PDF` (3 righe, scansione) su tutte e tre le famiglie: righe, totali di premi e provvigioni e ritenuta d'acconto coincidono con quelli dei documenti.
+
+## Tempi di risposta
+
+Con i due PDF di esempio l'estrazione richiede da 4 a 10 secondi. Per OpenAI e Gemini il ragionamento interno del modello è impostato su `low` (`reasoning_effort` e `thinkingLevel`, in `srv/lib/providers/`): dimezza i tempi con gli stessi risultati. Claude non ragiona e non ha un parametro equivalente.
+
+Ogni richiesta scrive nei log tre righe di soli metadati (mai il contenuto dei documenti), leggibili con `cf logs itas-ecbrk-srv --recent`:
+- `[extract] pdf=…ms testo=…car` (o `immagini=N`): lettura del PDF;
+- `[llm] provider=… token=…ms chiamata=…ms finish=…`: ottenimento del token OAuth (`cache` se già valido) e chiamata al modello;
+- `[upload] totale=…ms stato=…`: durata complessiva della richiesta.
+
+Se una richiesta è lenta, il confronto tra `totale` e `chiamata` indica se il tempo è speso nel modello o altrove.
 
 Il database è il file `db.sqlite`, creato all'avvio se non esiste. L'OData in sola lettura è su `/odata/archivio` (`Documents`, `Policies`).
 
