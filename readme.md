@@ -51,6 +51,22 @@ Per la quadratura l'IA legge anche i totali stampati nel PDF (`totalePremiDocume
 
 Se l'IA salta una riga, la quadratura fallisce e il punteggio scende (verificato alterando il totale premi di AON: 70% con tutte e tre le famiglie).
 
+## Documenti molto lunghi
+
+Il modello restituisce un JSON con una voce per riga (circa 70 token a riga). Il tetto di token della risposta è **64000** per tutte le famiglie, modificabile con `LLM_MAX_OUTPUT_TOKENS` (massimi dei modelli: Gemini 65536, OpenAI 128000). Se la risposta non ci sta, l'app risponde con l'errore "documento troppo lungo" e non salva nulla.
+
+Gli importi sono letti sia in formato italiano (`1.340,00`) sia inglese (`€1,340.00`): vale come decimale l'ultimo separatore.
+
+Prova reale con `WIDE07.pdf` (23 pagine di solo testo, 472 righe, totali 374.722,99 € premi e 54.176,65 € provvigioni, ritenuta 2.492,13 €), una sola chiamata al modello:
+
+| Modello | Esito |
+|---|---|
+| Gemini | 472 righe, totali che quadrano, punteggio 100%, **176 s** |
+| OpenAI | si ferma da solo a 147 righe su 472 (`finish=stop`, 51 s): punteggio 40%, totali che non quadrano |
+| Claude | nessuna risposta: errore di rete dopo oltre 5 minuti (timeout di Node sulle risposte lente) |
+
+Una singola chiamata per un documento così lungo è quindi lenta e, con alcuni modelli, incompleta: il punteggio di confidenza lo segnala, ma non lo evita.
+
 ## Tempi di risposta
 
 Con i due PDF di esempio l'estrazione richiede da 4 a 10 secondi. Per OpenAI e Gemini il ragionamento interno del modello è impostato su `low` (`reasoning_effort` e `thinkingLevel`, in `srv/lib/providers/`): dimezza i tempi con gli stessi risultati. Claude non ragiona e non ha un parametro equivalente.

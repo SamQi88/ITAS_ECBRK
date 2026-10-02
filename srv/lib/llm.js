@@ -80,7 +80,8 @@ function createLlmClient ({ config, fetchImpl = fetch }) {
       data = await res.json()
       callMs = Date.now() - t1
     } catch (err) {
-      console.error('[llm]', err.message)
+      // "fetch failed" da solo non dice nulla: la causa (timeout, connessione chiusa…) sta in err.cause
+      console.error('[llm]', err.message + (err.cause && err.cause.code ? ` (${err.cause.code})` : ''))
       throw new HttpError(502, 'Servizio di estrazione non disponibile', 'LLM_UNAVAILABLE')
     }
     const { content, finishReason, truncated, usage } = provider.parseResponse(data)

@@ -123,3 +123,12 @@ test('log dei tempi: famiglia, deployment, durata di token e chiamata; mai il co
 test('famiglia sconosciuta nella configurazione: errore 500 chiaro', () => {
   assert.throws(() => createLlmClient({ config: { ...common, provider: 'mistral', deploymentId: 'd' }, fetchImpl: fakeFetch(() => null) }), e => e.status === 500 && /mistral/.test(e.message))
 })
+
+test('errore di rete con causa (per esempio timeout): il log riporta il codice della causa', async () => {
+  const log = quiet()
+  try {
+    const timeout = async () => { throw Object.assign(new Error('fetch failed'), { cause: { code: 'UND_ERR_HEADERS_TIMEOUT' } }) }
+    await assert.rejects(createLlmClient({ config: google, fetchImpl: timeout }).extractPolicies({ text: 'x', images: [] }), e => e.status === 502)
+    assert.match(log.mock.calls.map(c => c.arguments.join(' ')).join(' | '), /UND_ERR_HEADERS_TIMEOUT/)
+  } finally { log.mock.restore() }
+})
