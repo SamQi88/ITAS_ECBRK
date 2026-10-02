@@ -9,12 +9,12 @@ Regole:
 - ritenutaAcconto: importo complessivo della ritenuta d'acconto (R.d.A.) del documento, di solito vicino ai totali (per esempio "Ritenuta di acconto … EUR" o "Importo R.d.A."). Usa il totale del documento, non la ritenuta di una singola riga. Se nel documento non c'è usa null.
 - totalePremiDocumento e totaleProvvigioniDocumento: i totali di premi e di provvigioni stampati nel documento (riga "Totale" o "Totali"). Copia il valore scritto, non calcolarlo sommando le righe. Se il documento non riporta il totale usa null.
 - Una voce per ogni riga di polizza, nell'ordine del documento. Non includere righe di totale, saldo o riporto.
-- dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata" oppure "NS. RIF." .
+- dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata" oppure "NS. RIF." o "Data scadenza" .
 - contraente: colonna "Cliente" oppure "Contraente".
 - numeroPolizza: colonna "Nro Contratto" (se il valore è ripetuto dopo "||" tieni solo il primo) oppure "Polizza".
 - premi: "Premio Lordo" oppure "Premi" della riga, non il totale.
 - provvigioni: "Provvigioni Attive Totali" oppure "Provvigioni" della riga, prima della ritenuta, non il totale.
-- dataIncasso: colonna "Data Incasso" / "Data incasso".
+- dataIncasso: colonna "Data Incasso" / "Data incasso" oppure solo "Data".
 - Copia importi e date come sono scritti nel documento. Se un valore manca usa null. Non inventare valori.`
 
 // il contenuto della risposta contiene dati di clienti: nei log solo metadati
