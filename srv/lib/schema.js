@@ -21,8 +21,20 @@ function parseAmount (v) {
   const negative = raw.includes('-') || /^\s*\(.*\)\s*$/.test(raw)
   let s = raw.replace(/[^\d,.]/g, '')
   if (!/\d/.test(s)) return null
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.')
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
+  const lastComma = s.lastIndexOf(',')
+  const lastDot = s.lastIndexOf('.')
+  if (lastComma !== -1 && lastDot !== -1) {
+    // entrambi i separatori: l'ultimo è il decimale (italiano 1.340,00 oppure inglese 1,340.00)
+    const decimal = lastComma > lastDot ? ',' : '.'
+    const thousands = decimal === ',' ? '.' : ','
+    s = s.split(thousands).join('').replace(decimal, '.')
+  } else if (lastComma !== -1) {
+    // solo virgole: più di una sono migliaia (1,234,567); una sola è il decimale italiano (12,50)
+    s = s.indexOf(',') !== lastComma ? s.replace(/,/g, '') : s.replace(',', '.')
+  } else if (lastDot !== -1) {
+    // solo punti: più di uno, o un solo gruppo di tre cifre (5.725), sono migliaia; altrimenti decimale (5725.73)
+    if (s.indexOf('.') !== lastDot || /^\d{1,3}\.\d{3}$/.test(s)) s = s.replace(/\./g, '')
+  }
   const n = Number(s)
   if (!Number.isFinite(n)) return null
   return n === 0 ? 0 : negative ? -n : n

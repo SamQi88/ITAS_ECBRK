@@ -58,6 +58,29 @@ test('parseAmount conserva il segno in stile contabile (meno finale, parentesi)'
   assert.equal(parseAmount('0,00-'), 0)
 })
 
+test('parseAmount legge anche il formato inglese (virgola per le migliaia, punto per i decimali)', () => {
+  assert.equal(parseAmount('€1,340.00'), 1340)
+  assert.equal(parseAmount('€716.00'), 716)
+  assert.equal(parseAmount('€374,722.99'), 374722.99)
+  assert.equal(parseAmount('€2,492.13'), 2492.13)
+  assert.equal(parseAmount('€-56.00'), -56)
+  assert.equal(parseAmount('€-960.74'), -960.74)
+  assert.equal(parseAmount('€41,682.50'), 41682.5)
+  assert.equal(parseAmount('1,234,567.89'), 1234567.89)
+  assert.equal(parseAmount('€0.00'), 0)
+  assert.equal(parseAmount('€-0.97'), -0.97)
+})
+
+test('parseAmount: il formato italiano resta invariato, anche con più separatori', () => {
+  assert.equal(parseAmount('1.340,00'), 1340)
+  assert.equal(parseAmount('374.722,99'), 374722.99)
+  assert.equal(parseAmount('1.234.567,89'), 1234567.89)
+  assert.equal(parseAmount('1.234.567'), 1234567)
+  assert.equal(parseAmount('12,50'), 12.5)
+  assert.equal(parseAmount('5725.73'), 5725.73)
+  assert.equal(parseAmount('1.234,50-'), -1234.5)
+})
+
 test('normalizeRitenuta legge l\'importo complessivo, null se assente o illeggibile', () => {
   assert.equal(normalizeRitenuta({ ritenutaAcconto: '234,92' }), 234.92)
   assert.equal(normalizeRitenuta({ ritenutaAcconto: '2,88' }), 2.88)
