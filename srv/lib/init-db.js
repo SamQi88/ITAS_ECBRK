@@ -28,11 +28,25 @@ function restore (file, table, rows) {
   } finally { d.close() }
 }
 
+// Colonna aggiunta dopo la prima versione: ALTER TABLE basta, i dati restano dove sono.
+function addMissingColumns (file) {
+  const d = new DatabaseSync(file)
+  try {
+    const cols = d.prepare(`pragma table_info('${DOCS}')`).all().map(c => c.name)
+    if (!cols.length || cols.includes('RITENUTA_ACCONTO')) return false
+    d.exec(`alter table ${DOCS} add column RITENUTA_ACCONTO DECIMAL(15, 2)`)
+    return true
+  } finally { d.close() }
+}
+
 async function initDb (file) {
   let saved = null
   if (fs.existsSync(file)) {
     saved = readIfOutdated(file)
-    if (!saved) return { created: false, migrated: false }
+    if (!saved) {
+      const added = addMissingColumns(file)
+      return { created: false, migrated: added }
+    }
     fs.renameSync(file, `${file}.bak-${Date.now()}`) // copia di sicurezza, mai cancellare i dati
   }
   const db = await cds.connect.to('db')

@@ -36,10 +36,13 @@ const cdsConfig = file => JSON.stringify({ requires: { db: { kind: 'sqlite', cre
 const run = (args, file) => execFileSync(process.execPath, args, { cwd: ROOT, encoding: 'utf8', env: { ...process.env, CDS_CONFIG: cdsConfig(file) } })
 const runInit = file => run(['srv/init-db.js'], file)
 
-function makeOldDb (dir) {
+// schema senza UNIQUE ma anche senza la colonna della ritenuta d'acconto (versione precedente)
+const SCHEMA_SENZA_RITENUTA = OLD_SCHEMA.replace('@assert.unique: { hash: [HASH_SHA256] }\n', '')
+
+function makeOldDb (dir, schema = OLD_SCHEMA) {
   const file = path.join(dir, 'old.sqlite')
   const model = path.join(dir, 'old-schema.cds')
-  fs.writeFileSync(model, OLD_SCHEMA)
+  fs.writeFileSync(model, schema)
   run(['-e', `const cds = require('@sap/cds'); (async () => { const db = await cds.connect.to('db'); await cds.deploy(${JSON.stringify(model)}).to(db); await db.disconnect() })()`], file)
   const d = new DatabaseSync(file)
   d.prepare("insert into itas_ecbrk_Documents (ID_OPERAZIONE, NOME_DOCUMENTO, HASH_SHA256, DATA_CARICAMENTO) values ('op-1', 'vecchio.pdf', 'h1', '2026-01-02T03:04:05.000Z')").run()
@@ -66,6 +69,33 @@ test('DB creato con lo schema vecchio: vincolo UNIQUE tolto, dati e data di cari
   assert.equal(d.prepare('select count(*) n from itas_ecbrk_Documents').get().n, 2)
   d.close()
   assert.ok(fs.readdirSync(dir).some(f => f.startsWith('old.sqlite.bak')), 'copia di sicurezza del file originale')
+})
+
+test('DB senza la colonna della ritenuta: colonna aggiunta sul posto, dati conservati, nessuna copia', () => {
+  const dir = tmp()
+  const file = makeOldDb(dir, SCHEMA_SENZA_RITENUTA)
+  assert.match(runInit(file), /aggiornato/)
+
+  const d = new DatabaseSync(file)
+  const cols = d.prepare("pragma table_info('itas_ecbrk_Documents')").all().map(c => c.name)
+  assert.ok(cols.includes('RITENUTA_ACCONTO'), 'colonna RITENUTA_ACCONTO presente')
+  const doc = d.prepare('select * from itas_ecbrk_Documents').get()
+  assert.equal(doc.NOME_DOCUMENTO, 'vecchio.pdf')
+  assert.equal(doc.RITENUTA_ACCONTO, null)
+  d.prepare("update itas_ecbrk_Documents set RITENUTA_ACCONTO = 234.92 where ID_OPERAZIONE = 'op-1'").run()
+  assert.equal(d.prepare('select RITENUTA_ACCONTO r from itas_ecbrk_Documents').get().r, 234.92)
+  d.close()
+  assert.equal(fs.readdirSync(dir).filter(f => f.includes('.bak')).length, 0)
+  assert.doesNotMatch(runInit(file), /creato|aggiornato/, 'la seconda esecuzione non fa nulla')
+})
+
+test('DB con UNIQUE vecchio: dopo l\'aggiornamento ha anche la colonna della ritenuta', () => {
+  const dir = tmp()
+  const file = makeOldDb(dir)
+  runInit(file)
+  const d = new DatabaseSync(file)
+  assert.ok(d.prepare("pragma table_info('itas_ecbrk_Documents')").all().some(c => c.name === 'RITENUTA_ACCONTO'))
+  d.close()
 })
 
 test('DB assente: viene creato con lo schema; DB già aggiornato: non viene toccato', () => {

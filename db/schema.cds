@@ -6,6 +6,7 @@ entity Documents {
   NOME_DOCUMENTO    : String(255) not null;
   HASH_SHA256       : String(64) not null;
   DATA_CARICAMENTO  : Timestamp @cds.on.insert: $now;
+  RITENUTA_ACCONTO  : Decimal(15,2);
 }
 
 entity Policies {
