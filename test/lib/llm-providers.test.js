@@ -96,6 +96,15 @@ test('il prompt chiede anche l\'importo complessivo della ritenuta d\'acconto', 
   assert.match(system, /null/)
 })
 
+test('il prompt chiede di copiare i totali stampati nel documento, senza calcolarli', async () => {
+  const f = fakeFetch(() => gemini('{"righe":[]}'))
+  await createLlmClient({ config: google, fetchImpl: f }).extractPolicies({ text: 'x', images: [] })
+  const system = JSON.parse(callOf(f).opts.body).systemInstruction.parts[0].text
+  assert.match(system, /totalePremiDocumento/)
+  assert.match(system, /totaleProvvigioniDocumento/)
+  assert.match(system, /non calcolar/i)
+})
+
 test('log dei tempi: famiglia, deployment, durata di token e chiamata; mai il contenuto', async () => {
   const log = mock.method(console, 'log', () => {})
   try {

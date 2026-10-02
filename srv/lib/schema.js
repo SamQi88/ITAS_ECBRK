@@ -53,4 +53,9 @@ function normalizeRitenuta (raw) {
   return parseAmount(raw && raw.ritenutaAcconto)
 }
 
-module.exports = { parseDate, parseAmount, normalizeRows, normalizeRitenuta }
+// totali stampati nel documento: servono solo al controllo di quadratura del punteggio di confidenza
+function normalizeTotali (raw) {
+  return { premi: parseAmount(raw && raw.totalePremiDocumento), provvigioni: parseAmount(raw && raw.totaleProvvigioniDocumento) }
+}
+
+module.exports = { parseDate, parseAmount, normalizeRows, normalizeRitenuta, normalizeTotali }

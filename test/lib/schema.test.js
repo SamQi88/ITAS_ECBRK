@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { parseDate, parseAmount, normalizeRows, normalizeRitenuta } = require('../../srv/lib/schema')
+const { parseDate, parseAmount, normalizeRows, normalizeRitenuta, normalizeTotali } = require('../../srv/lib/schema')
 
 test('parseDate converte gg/mm/aaaa e rifiuta il resto', () => {
   assert.equal(parseDate('31/01/2026'), '2026-01-31')
@@ -67,4 +67,12 @@ test('normalizeRitenuta legge l\'importo complessivo, null se assente o illeggib
   assert.equal(normalizeRitenuta({ ritenutaAcconto: 'n/d' }), null)
   assert.equal(normalizeRitenuta({ righe: [] }), null)
   assert.equal(normalizeRitenuta(null), null)
+})
+
+test('normalizeTotali legge i totali stampati nel documento, null se assenti o illeggibili', () => {
+  assert.deepEqual(normalizeTotali({ totalePremiDocumento: '34.265,22', totaleProvvigioniDocumento: '5.107,02' }), { premi: 34265.22, provvigioni: 5107.02 })
+  assert.deepEqual(normalizeTotali({ totalePremiDocumento: 2090.82, totaleProvvigioniDocumento: '62,62' }), { premi: 2090.82, provvigioni: 62.62 })
+  assert.deepEqual(normalizeTotali({ totalePremiDocumento: null }), { premi: null, provvigioni: null })
+  assert.deepEqual(normalizeTotali({ totalePremiDocumento: 'n/d', totaleProvvigioniDocumento: '' }), { premi: null, provvigioni: null })
+  assert.deepEqual(normalizeTotali(null), { premi: null, provvigioni: null })
 })

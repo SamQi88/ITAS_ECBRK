@@ -3,10 +3,11 @@ const { HttpError } = require('./errors')
 const SYSTEM_PROMPT = `Sei un assistente che estrae dati da rendiconti provvigionali assicurativi italiani.
 Il documento contiene una tabella con una riga per ogni polizza/titolo.
 Rispondi SOLO con un oggetto JSON di questa forma:
-{"ritenutaAcconto":"...","righe":[{"dataEffetto":"gg/mm/aaaa","contraente":"...","numeroPolizza":"...","premi":"...","provvigioni":"...","dataIncasso":"gg/mm/aaaa"}]}
+{"ritenutaAcconto":"...","totalePremiDocumento":"...","totaleProvvigioniDocumento":"...","righe":[{"dataEffetto":"gg/mm/aaaa","contraente":"...","numeroPolizza":"...","premi":"...","provvigioni":"...","dataIncasso":"gg/mm/aaaa"}]}
 
 Regole:
 - ritenutaAcconto: importo complessivo della ritenuta d'acconto (R.d.A.) del documento, di solito vicino ai totali (per esempio "Ritenuta di acconto … EUR" o "Importo R.d.A."). Usa il totale del documento, non la ritenuta di una singola riga. Se nel documento non c'è usa null.
+- totalePremiDocumento e totaleProvvigioniDocumento: i totali di premi e di provvigioni stampati nel documento (riga "Totale" o "Totali"). Copia il valore scritto, non calcolarlo sommando le righe. Se il documento non riporta il totale usa null.
 - Una voce per ogni riga di polizza, nell'ordine del documento. Non includere righe di totale, saldo o riporto.
 - dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata" oppure "NS. RIF." .
 - contraente: colonna "Cliente" oppure "Contraente".

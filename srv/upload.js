@@ -2,7 +2,8 @@ const crypto = require('node:crypto')
 const multer = require('multer')
 const cds = require('@sap/cds')
 const { HttpError } = require('./lib/errors')
-const { normalizeRows, normalizeRitenuta } = require('./lib/schema')
+const { normalizeRows, normalizeRitenuta, normalizeTotali } = require('./lib/schema')
+const { computeConfidence } = require('./lib/confidence')
 
 const DOC = 'itas.ecbrk.Documents'
 const POL = 'itas.ecbrk.Policies'
@@ -71,6 +72,7 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
         const righe = normalizeRows(raw)
         if (!righe.length) throw new HttpError(422, 'Nessuna polizza trovata', 'NO_ROWS')
         const ritenutaAcconto = normalizeRitenuta(raw)
+        const confidenza = computeConfidence({ righe, totali: normalizeTotali(raw) })
 
         const id = cds.utils.uuid()
         try {
@@ -95,6 +97,7 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
           alreadyUploaded,
           warning,
           ritenutaAcconto,
+          confidenza,
           righe
         })
       } catch (e) { next(e) }
