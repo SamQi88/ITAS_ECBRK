@@ -6,11 +6,15 @@ sap.ui.define([
   "use strict";
 
   const EMPTY = "Carica un documento PDF";
-  const amount = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+  const amount = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", useGrouping: "always" });
+
+  // totale = somma degli importi letti dall'IA, arrotondata al centesimo (non il totale scritto nel PDF)
+  const sum = (rows, key) => Math.round(rows.reduce((acc, r) => acc + (Number(r[key]) || 0), 0) * 100) / 100;
 
   return Controller.extend("itas.ecbrk.Main", {
     onInit: function () {
-      this.getView().setModel(new JSONModel({ fileName: "", rows: [], count: 0, busy: false, emptyText: EMPTY }));
+      this.getView().setModel(new JSONModel(this._state({})));
+      this._loadModelLabel();
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "application/pdf,.pdf";
@@ -40,16 +44,36 @@ sap.ui.define([
       return v === null || v === undefined ? "" : amount.format(v);
     },
 
+    // stato completo della pagina: sempre un oggetto intero, per non mescolare righe di documenti diversi
+    _state: function (partial) {
+      return Object.assign({
+        fileName: "", rows: [], count: 0, busy: false, emptyText: EMPTY,
+        totalePremi: null, totaleProvvigioni: null, ritenuta: null,
+        modelLabel: this._modelLabel || ""
+      }, partial);
+    },
+
+    // nome del modello IA in uso, in linguaggio naturale (viene dalla configurazione del server)
+    _loadModelLabel: function () {
+      fetch("/api/model")
+        .then((res) => res.json())
+        .then((info) => {
+          this._modelLabel = info.label || "";
+          this.getView().getModel().setProperty("/modelLabel", this._modelLabel);
+        })
+        .catch(() => {});
+    },
+
     _onFile: async function (file) {
       if (!file) return;
       const model = this.getView().getModel();
       if (this._url) URL.revokeObjectURL(this._url);
       this._url = URL.createObjectURL(file);
       document.getElementById("pdfPreview").src = this._url;
-      model.setData({ fileName: file.name, rows: [], count: 0, busy: true, emptyText: "Elaborazione in corso…" });
+      model.setData(this._state({ fileName: file.name, busy: true, emptyText: "Elaborazione in corso…" }));
 
       const fail = (fn, msg) => {
-        model.setData({ fileName: file.name, rows: [], count: 0, busy: false, emptyText: "Nessun dato" });
+        model.setData(this._state({ fileName: file.name, emptyText: "Nessun dato" }));
         fn.call(MessageBox, msg);
       };
       try {
@@ -60,7 +84,15 @@ sap.ui.define([
         if (!res.ok) {
           return fail(MessageBox.error, (body.error && body.error.message) || "Errore durante l'elaborazione");
         }
-        model.setData({ fileName: file.name, rows: body.righe, count: body.righe.length, busy: false, emptyText: "Nessun dato" });
+        model.setData(this._state({
+          fileName: file.name,
+          rows: body.righe,
+          count: body.righe.length,
+          emptyText: "Nessun dato",
+          totalePremi: sum(body.righe, "premi"),
+          totaleProvvigioni: sum(body.righe, "provvigioni"),
+          ritenuta: body.ritenutaAcconto === undefined ? null : body.ritenutaAcconto
+        }));
         // documento già caricato: il file viene comunque elaborato, l'utente ne viene solo avvisato
         if (body.warning) MessageBox.warning(body.warning);
       } catch (e) {

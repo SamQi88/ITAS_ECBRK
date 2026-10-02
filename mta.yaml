@@ -20,6 +20,10 @@ modules:
       DEPLOYMENT_ID_GOOGLE: d3e2bd1087b50450
       GOOGLE_MODEL: gemini-3.8-flash
       DEPLOYMENT_ID_ANTHROPIC: d0758f19233c0b41
+      # nome del modello mostrato in alto a destra nella pagina
+      MODEL_LABEL_OPENAI: GPT-5.5
+      MODEL_LABEL_GOOGLE: Gemini 3.8 Flash
+      MODEL_LABEL_ANTHROPIC: Claude Opus 4.8
       RESOURCE_GROUP: default
       AICORE_DESTINATION_NAME: SAP_AI_CORE_CROSS_SUB
       # --- Parametri di autenticazione SAP AI Core ---

@@ -2,6 +2,7 @@
   controllerName="itas.ecbrk.Main" height="100%">
   <Page title="Rendiconti provvigionali" enableScrolling="false" class="sapUiNoContentPadding">
     <headerContent>
+      <Text text="{= 'Modello: ' + ${/modelLabel}}" visible="{= !!${/modelLabel}}" class="sapUiSmallMarginEnd"/>
       <Text text="{/fileName}" class="sapUiSmallMarginEnd"/>
       <Button text="Carica documento" icon="sap-icon://upload" type="Emphasized"
         enabled="{= !${/busy}}" press=".onPickFile"/>
@@ -13,7 +14,21 @@
         </core:HTML>
         <ScrollContainer height="100%" vertical="true">
           <layoutData><l:SplitterLayoutData size="auto"/></layoutData>
-          <Title text="Posizioni di Incasso Estratte ({/count})" class="sapUiSmallMargin"/>
+          <Title text="Posizioni estratto conto ({/count})" class="sapUiSmallMargin"/>
+          <HBox wrap="Wrap" class="sapUiSmallMarginBeginEnd sapUiSmallMarginBottom" visible="{= ${/count} > 0}">
+            <VBox class="sapUiMediumMarginEnd">
+              <Label text="Totale premi"/>
+              <ObjectNumber number="{path: '/totalePremi', formatter: '.formatAmount'}" emphasized="true"/>
+            </VBox>
+            <VBox class="sapUiMediumMarginEnd">
+              <Label text="Totale provvigioni"/>
+              <ObjectNumber number="{path: '/totaleProvvigioni', formatter: '.formatAmount'}" emphasized="true"/>
+            </VBox>
+            <VBox visible="{= ${/ritenuta} !== null}">
+              <Label text="Ritenuta d'acconto"/>
+              <ObjectNumber number="{path: '/ritenuta', formatter: '.formatAmount'}" emphasized="true"/>
+            </VBox>
+          </HBox>
           <Table items="{/rows}" busy="{/busy}" busyIndicatorDelay="0" noDataText="{/emptyText}">
             <columns>
               <Column><Text text="Data effetto"/></Column>

@@ -45,4 +45,16 @@ function loadConfig (env = process.env) {
   return cfg
 }
 
-module.exports = { loadConfig, PROVIDERS }
+// nome del modello in linguaggio naturale da mostrare all'utente (non richiede le credenziali di AI Core)
+const GENERIC_LABELS = { openai: 'OpenAI GPT', google: 'Google Gemini', anthropic: 'Anthropic Claude' }
+
+function modelInfo (env = process.env) {
+  const provider = String(env.LLM_PROVIDER || 'openai').trim().toLowerCase()
+  if (!PROVIDERS.includes(provider)) {
+    throw new HttpError(500, `LLM_PROVIDER non valido: "${env.LLM_PROVIDER}". Valori ammessi: ${PROVIDERS.join(', ')}`, 'CONFIG')
+  }
+  const custom = String(env[`MODEL_LABEL_${provider.toUpperCase()}`] || '').trim()
+  return { provider, label: custom || GENERIC_LABELS[provider] }
+}
+
+module.exports = { loadConfig, modelInfo, PROVIDERS }
