@@ -35,6 +35,22 @@ Il nome mostrato in alto a destra viene da `MODEL_LABEL_OPENAI`, `MODEL_LABEL_GO
 
 Verificato con `AON 636016.pdf` (11 righe, testo) e `IBC VITA.PDF` (3 righe, scansione) su tutte e tre le famiglie: righe, totali di premi e provvigioni e ritenuta d'acconto coincidono con quelli dei documenti.
 
+## Parsing Confidence Score
+
+A destra del titolo "Posizioni estratto conto" compare una percentuale unica per documento: verde da 90%, arancione da 70% a 89%, rosso sotto il 70%. Il passaggio del mouse mostra il dettaglio.
+
+**Non è una probabilità del modello** (i modelli generativi non ne restituiscono una affidabile): è un indice di coerenza calcolato da controlli oggettivi in `srv/lib/confidence.js`.
+
+| Controllo | Peso | Come |
+|---|---|---|
+| Completezza | 40% | quota dei sei campi di ogni riga letti e validi |
+| Quadratura premi | 30% | somma delle righe uguale al totale premi stampato nel documento (tolleranza 2 centesimi) |
+| Quadratura provvigioni | 30% | come sopra, per le provvigioni |
+
+Per la quadratura l'IA legge anche i totali stampati nel PDF (`totalePremiDocumento`, `totaleProvvigioniDocumento`), usati solo per il controllo: i totali mostrati in pagina restano la somma delle righe. Se il documento non stampa un totale, quel controllo è escluso e i pesi degli altri si riscalano. Un 100% significa che i campi ci sono e i numeri tornano, non che ogni singolo valore sia garantito. Il punteggio non viene salvato nel database.
+
+Se l'IA salta una riga, la quadratura fallisce e il punteggio scende (verificato alterando il totale premi di AON: 70% con tutte e tre le famiglie).
+
 ## Tempi di risposta
 
 Con i due PDF di esempio l'estrazione richiede da 4 a 10 secondi. Per OpenAI e Gemini il ragionamento interno del modello è impostato su `low` (`reasoning_effort` e `thinkingLevel`, in `srv/lib/providers/`): dimezza i tempi con gli stessi risultati. Claude non ragiona e non ha un parametro equivalente.

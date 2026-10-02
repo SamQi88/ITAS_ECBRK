@@ -14,7 +14,13 @@
         </core:HTML>
         <ScrollContainer height="100%" vertical="true">
           <layoutData><l:SplitterLayoutData size="auto"/></layoutData>
-          <Title text="Posizioni estratto conto ({/count})" class="sapUiSmallMargin"/>
+          <HBox alignItems="Center" wrap="Wrap" class="sapUiSmallMargin">
+            <Title text="Posizioni estratto conto ({/count})" class="sapUiSmallMarginEnd"/>
+            <ObjectStatus inverted="true" visible="{= !!${/confidenza}}"
+              text="{path: '/confidenza', formatter: '.formatConfidenceText'}"
+              state="{path: '/confidenza', formatter: '.formatConfidenceState'}"
+              tooltip="{path: '/confidenza', formatter: '.formatConfidenceTooltip'}"/>
+          </HBox>
           <HBox wrap="Wrap" class="sapUiSmallMarginBeginEnd sapUiSmallMarginBottom" visible="{= ${/count} > 0}">
             <VBox class="sapUiMediumMarginEnd">
               <Label text="Totale premi"/>

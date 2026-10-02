@@ -44,11 +44,34 @@ sap.ui.define([
       return v === null || v === undefined ? "" : amount.format(v);
     },
 
+    // Parsing Confidence Score: verde da 90, arancione da 70, rosso sotto
+    formatConfidenceText: function (c) {
+      return c ? "Parsing Confidence Score: " + c.score + "%" : "";
+    },
+
+    formatConfidenceState: function (c) {
+      if (!c) return "None";
+      return c.score >= 90 ? "Success" : c.score >= 70 ? "Warning" : "Error";
+    },
+
+    formatConfidenceTooltip: function (c) {
+      if (!c) return "";
+      // "quadrati" per i premi, "quadrate" per le provvigioni
+      const check = (label, ok, nok, t) => {
+        if (!t) return label + ": totale non presente nel documento, controllo non eseguito";
+        return t.quadra
+          ? label + ": " + ok + " con il totale del documento (" + amount.format(t.documento) + ")"
+          : label + ": " + nok + ", somma delle righe " + amount.format(t.righe) + " contro " + amount.format(t.documento) + " nel documento";
+      };
+      return "Indice di coerenza dell'estrazione, non una probabilità del modello. Completezza dei campi: " + c.completezza + "%. " +
+        check("Premi", "quadrati", "NON quadrati", c.premi) + ". " + check("Provvigioni", "quadrate", "NON quadrate", c.provvigioni) + ".";
+    },
+
     // stato completo della pagina: sempre un oggetto intero, per non mescolare righe di documenti diversi
     _state: function (partial) {
       return Object.assign({
         fileName: "", rows: [], count: 0, busy: false, emptyText: EMPTY,
-        totalePremi: null, totaleProvvigioni: null, ritenuta: null,
+        totalePremi: null, totaleProvvigioni: null, ritenuta: null, confidenza: null,
         modelLabel: this._modelLabel || ""
       }, partial);
     },
@@ -91,7 +114,8 @@ sap.ui.define([
           emptyText: "Nessun dato",
           totalePremi: sum(body.righe, "premi"),
           totaleProvvigioni: sum(body.righe, "provvigioni"),
-          ritenuta: body.ritenutaAcconto === undefined ? null : body.ritenutaAcconto
+          ritenuta: body.ritenutaAcconto === undefined ? null : body.ritenutaAcconto,
+          confidenza: body.confidenza || null
         }));
         // documento già caricato: il file viene comunque elaborato, l'utente ne viene solo avvisato
         if (body.warning) MessageBox.warning(body.warning);
