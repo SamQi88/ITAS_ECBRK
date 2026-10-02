@@ -1,6 +1,7 @@
 const { HttpError } = require('./errors')
 
 const PROVIDERS = ['openai', 'google', 'anthropic']
+const DEFAULT_MAX_OUTPUT_TOKENS = 64000
 
 function loadConfig (env = process.env) {
   let creds = {}
@@ -35,6 +36,19 @@ function loadConfig (env = process.env) {
   }
   for (const [k, name] of Object.entries(required)) {
     if (!cfg[k]) throw new HttpError(500, `Configurazione mancante: ${name}`, 'CONFIG')
+  }
+
+  // massimo di token della risposta: un documento molto lungo ne richiede molti (circa 70 per riga).
+  // Limiti dei modelli: Gemini 65536, OpenAI 128000.
+  const rawMax = env.LLM_MAX_OUTPUT_TOKENS
+  if (rawMax !== undefined && rawMax !== '') {
+    const n = Number(rawMax)
+    if (!Number.isInteger(n) || n < 1 || n > 128000) {
+      throw new HttpError(500, `LLM_MAX_OUTPUT_TOKENS non valido: "${rawMax}". Serve un intero tra 1 e 128000`, 'CONFIG')
+    }
+    cfg.maxOutputTokens = n
+  } else {
+    cfg.maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS
   }
 
   // l'URL di Gemini contiene il nome del modello

@@ -15,7 +15,7 @@ test('openai: URL, corpo con testo e lettura della risposta', () => {
   assert.equal(url, 'https://api/v2/inference/deployments/d1/chat/completions?api-version=v1')
   assert.deepEqual(body.messages, [{ role: 'system', content: SYS }, { role: 'user', content: 'estrai dal testo X' }])
   assert.deepEqual(body.response_format, { type: 'json_object' })
-  assert.equal(body.max_completion_tokens, 16000)
+  assert.equal(body.max_completion_tokens, 64000)
   assert.equal(body.temperature, undefined)
   assert.equal(body.reasoning_effort, 'low') // meno ragionamento = risposta più veloce, stessa precisione sui nostri PDF
   const r = openai.parseResponse({ choices: [{ finish_reason: 'stop', message: { content: '{"a":1}' } }], usage: { total_tokens: 5 } })
@@ -38,7 +38,7 @@ test('google: URL con modello, istruzioni di sistema, JSON mode e testo', () => 
   assert.deepEqual(body.systemInstruction, { parts: [{ text: SYS }] })
   assert.deepEqual(body.contents, [{ role: 'user', parts: [{ text: 'estrai dal testo X' }] }])
   assert.equal(body.generationConfig.responseMimeType, 'application/json')
-  assert.equal(body.generationConfig.maxOutputTokens, 16000)
+  assert.equal(body.generationConfig.maxOutputTokens, 64000)
   assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingLevel: 'low' })
 })
 
@@ -61,7 +61,7 @@ test('anthropic: URL converse, system, testo e limite di token', () => {
   assert.equal(url, 'https://api/v2/inference/deployments/d1/converse')
   assert.deepEqual(body.system, [{ text: SYS }])
   assert.deepEqual(body.messages, [{ role: 'user', content: [{ text: 'estrai dal testo X' }] }])
-  assert.equal(body.inferenceConfig.maxTokens, 16000)
+  assert.equal(body.inferenceConfig.maxTokens, 64000)
   assert.equal(body.additionalModelRequestFields, undefined) // Claude non ragiona: nessun parametro da ridurre
 })
 
@@ -75,4 +75,15 @@ test('anthropic: legge il testo e riconosce max_tokens', () => {
   assert.deepEqual(anthropic.parseResponse(data), { content: '{"a":1}', finishReason: 'end_turn', truncated: false, usage: { inputTokens: 3, outputTokens: 4 } })
   assert.equal(anthropic.parseResponse({ output: { message: { content: [{ text: '{' }] } }, stopReason: 'max_tokens' }).truncated, true)
   assert.equal(anthropic.parseResponse({}).content, null)
+})
+
+// ---- limite di token della risposta (documenti molto lunghi)
+test('limite di token: 64000 di default per tutte le famiglie, modificabile dalla configurazione', () => {
+  const args = { system: SYS, instruction: 'x', images: [] }
+  assert.equal(openai.buildRequest({ config: { ...base }, ...args }).body.max_completion_tokens, 64000)
+  assert.equal(google.buildRequest({ config: { ...base, model: 'm' }, ...args }).body.generationConfig.maxOutputTokens, 64000)
+  assert.equal(anthropic.buildRequest({ config: { ...base }, ...args }).body.inferenceConfig.maxTokens, 64000)
+  assert.equal(openai.buildRequest({ config: { ...base, maxOutputTokens: 1234 }, ...args }).body.max_completion_tokens, 1234)
+  assert.equal(google.buildRequest({ config: { ...base, model: 'm', maxOutputTokens: 1234 }, ...args }).body.generationConfig.maxOutputTokens, 1234)
+  assert.equal(anthropic.buildRequest({ config: { ...base, maxOutputTokens: 1234 }, ...args }).body.inferenceConfig.maxTokens, 1234)
 })

@@ -7,7 +7,7 @@ test('legge dalle variabili d\'ambiente', () => {
     AI_CORE_CLIENT_ID: 'id', AI_CORE_CLIENT_SECRET: 's', AI_CORE_AUTH_URL: 'https://auth',
     AI_API_URL: 'https://api', DEPLOYMENT_ID: 'd1'
   })
-  assert.deepEqual(c, { authUrl: 'https://auth', clientId: 'id', clientSecret: 's', apiUrl: 'https://api', deploymentId: 'd1', resourceGroup: 'default', apiVersion: '2024-12-01-preview', provider: 'openai' })
+  assert.deepEqual(c, { authUrl: 'https://auth', clientId: 'id', clientSecret: 's', apiUrl: 'https://api', deploymentId: 'd1', resourceGroup: 'default', apiVersion: '2024-12-01-preview', provider: 'openai', maxOutputTokens: 64000 })
 })
 
 test('legge dal binding VCAP_SERVICES', () => {

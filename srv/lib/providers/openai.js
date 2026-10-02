@@ -1,5 +1,5 @@
 // OpenAI / Azure OpenAI tramite SAP AI Core (chat completions)
-const MAX_OUTPUT_TOKENS = 16000
+const DEFAULT_MAX_OUTPUT_TOKENS = 64000
 
 function buildRequest ({ config, system, instruction, images }) {
   const userContent = images && images.length
@@ -12,7 +12,7 @@ function buildRequest ({ config, system, instruction, images }) {
     body: {
       messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }],
       response_format: { type: 'json_object' },
-      max_completion_tokens: MAX_OUTPUT_TOKENS,
+      max_completion_tokens: config.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
       // ragionamento ridotto: dimezza i tempi (11,6 s → 5,9 s su AON) con gli stessi risultati; 'minimal' non è supportato
       reasoning_effort: 'low'
     }

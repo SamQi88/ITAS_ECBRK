@@ -1,5 +1,5 @@
 // Google Gemini (Vertex AI) tramite SAP AI Core (generateContent)
-const MAX_OUTPUT_TOKENS = 16000
+const DEFAULT_MAX_OUTPUT_TOKENS = 64000
 
 function buildRequest ({ config, system, instruction, images }) {
   const parts = [{ text: instruction }]
@@ -12,7 +12,7 @@ function buildRequest ({ config, system, instruction, images }) {
       // ragionamento ridotto: dimezza i tempi (16,4 s → 8,6 s su AON) con gli stessi risultati
       generationConfig: {
         responseMimeType: 'application/json',
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        maxOutputTokens: config.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
         thinkingConfig: { thinkingLevel: 'low' }
       }
     }

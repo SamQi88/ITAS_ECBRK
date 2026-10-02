@@ -1,5 +1,5 @@
 // Anthropic Claude (AWS Bedrock) tramite SAP AI Core (Converse)
-const MAX_OUTPUT_TOKENS = 16000
+const DEFAULT_MAX_OUTPUT_TOKENS = 64000
 
 function buildRequest ({ config, system, instruction, images }) {
   const content = [{ text: instruction }]
@@ -9,7 +9,7 @@ function buildRequest ({ config, system, instruction, images }) {
     body: {
       system: [{ text: system }],
       messages: [{ role: 'user', content }],
-      inferenceConfig: { maxTokens: MAX_OUTPUT_TOKENS }
+      inferenceConfig: { maxTokens: config.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS }
     }
   }
 }

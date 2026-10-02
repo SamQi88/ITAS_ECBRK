@@ -42,3 +42,11 @@ test('LLM_PROVIDER sconosciuto: errore che elenca i valori ammessi', () => {
 test('il valore di LLM_PROVIDER ignora maiuscole e spazi', () => {
   assert.equal(loadConfig({ ...BASE, LLM_PROVIDER: ' Anthropic ', DEPLOYMENT_ID_ANTHROPIC: 'da' }).provider, 'anthropic')
 })
+
+test('LLM_MAX_OUTPUT_TOKENS: default 64000, valore personalizzato, valori non validi rifiutati', () => {
+  assert.equal(loadConfig({ ...BASE, DEPLOYMENT_ID: 'd' }).maxOutputTokens, 64000)
+  assert.equal(loadConfig({ ...BASE, DEPLOYMENT_ID: 'd', LLM_MAX_OUTPUT_TOKENS: '32000' }).maxOutputTokens, 32000)
+  for (const v of ['abc', '0', '-5', '1.5', '1000000']) {
+    assert.throws(() => loadConfig({ ...BASE, DEPLOYMENT_ID: 'd', LLM_MAX_OUTPUT_TOKENS: v }), e => e.status === 500 && /LLM_MAX_OUTPUT_TOKENS/.test(e.message), `valore ${v}`)
+  }
+})
