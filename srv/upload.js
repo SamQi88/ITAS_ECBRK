@@ -2,7 +2,7 @@ const crypto = require('node:crypto')
 const multer = require('multer')
 const cds = require('@sap/cds')
 const { HttpError } = require('./lib/errors')
-const { normalizeRows } = require('./lib/schema')
+const { normalizeRows, normalizeRitenuta } = require('./lib/schema')
 
 const DOC = 'itas.ecbrk.Documents'
 const POL = 'itas.ecbrk.Policies'
@@ -67,13 +67,15 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
           ? `Documento già caricato il ${fmtDate(existing.DATA_CARICAMENTO)}` 
           : null
 
-        const righe = normalizeRows(await extract(file.buffer))
+        const raw = await extract(file.buffer)
+        const righe = normalizeRows(raw)
         if (!righe.length) throw new HttpError(422, 'Nessuna polizza trovata', 'NO_ROWS')
+        const ritenutaAcconto = normalizeRitenuta(raw)
 
         const id = cds.utils.uuid()
         try {
           await cdsDb.tx(async tx => {
-            await tx.run(INSERT.into(DOC).entries({ ID_OPERAZIONE: id, NOME_DOCUMENTO: nome, HASH_SHA256: hash }))
+            await tx.run(INSERT.into(DOC).entries({ ID_OPERAZIONE: id, NOME_DOCUMENTO: nome, HASH_SHA256: hash, RITENUTA_ACCONTO: ritenutaAcconto }))
             await tx.run(INSERT.into(POL).entries(righe.map(r => ({
               ID_OPERAZIONE: id, NOME_DOCUMENTO: nome,
               DATA_EFFETTO: r.dataEffetto, CONTRAENTE: r.contraente, NUMERO_POLIZZA: r.numeroPolizza,
@@ -92,7 +94,8 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
           nomeDocumento: nome, 
           alreadyUploaded,
           warning,
-          righe 
+          ritenutaAcconto,
+          righe
         })
       } catch (e) { next(e) }
     })

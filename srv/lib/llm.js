@@ -3,9 +3,10 @@ const { HttpError } = require('./errors')
 const SYSTEM_PROMPT = `Sei un assistente che estrae dati da rendiconti provvigionali assicurativi italiani.
 Il documento contiene una tabella con una riga per ogni polizza/titolo.
 Rispondi SOLO con un oggetto JSON di questa forma:
-{"righe":[{"dataEffetto":"gg/mm/aaaa","contraente":"...","numeroPolizza":"...","premi":"...","provvigioni":"...","dataIncasso":"gg/mm/aaaa"}]}
+{"ritenutaAcconto":"...","righe":[{"dataEffetto":"gg/mm/aaaa","contraente":"...","numeroPolizza":"...","premi":"...","provvigioni":"...","dataIncasso":"gg/mm/aaaa"}]}
 
 Regole:
+- ritenutaAcconto: importo complessivo della ritenuta d'acconto (R.d.A.) del documento, di solito vicino ai totali (per esempio "Ritenuta di acconto … EUR" o "Importo R.d.A."). Usa il totale del documento, non la ritenuta di una singola riga. Se nel documento non c'è usa null.
 - Una voce per ogni riga di polizza, nell'ordine del documento. Non includere righe di totale, saldo o riporto.
 - dataEffetto: colonna "Data Effetto"; se assente usa "Dec.Rata" oppure "NS. RIF." .
 - contraente: colonna "Cliente" oppure "Contraente".
@@ -62,20 +63,28 @@ function createLlmClient ({ config, fetchImpl = fetch }) {
       ? 'Estrai le righe di polizza dalle pagine allegate.'
       : `Estrai le righe di polizza dal seguente testo del documento:\n\n${text}`
     const { url, body } = provider.buildRequest({ config, system: SYSTEM_PROMPT, instruction, images })
-    let data
+    let data, tokenTime, callMs
     try {
+      const tokenFresh = !(token && Date.now() < tokenExp)
+      const t0 = Date.now()
+      const bearer = await getToken()
+      tokenTime = tokenFresh ? `${Date.now() - t0}ms` : 'cache'
+      const t1 = Date.now()
       const res = await fetchImpl(url, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${await getToken()}`, 'AI-Resource-Group': config.resourceGroup, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${bearer}`, 'AI-Resource-Group': config.resourceGroup, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
       if (!res.ok) throw new Error(`${providerName} HTTP ${res.status}: ${await res.text()}`)
       data = await res.json()
+      callMs = Date.now() - t1
     } catch (err) {
       console.error('[llm]', err.message)
       throw new HttpError(502, 'Servizio di estrazione non disponibile', 'LLM_UNAVAILABLE')
     }
     const { content, finishReason, truncated, usage } = provider.parseResponse(data)
+    // solo metadati: il contenuto contiene dati di clienti
+    console.log(`[llm] provider=${providerName} deployment=${config.deploymentId} token=${tokenTime} chiamata=${callMs}ms finish=${finishReason}`)
     if (truncated) {
       console.error(`[llm] risposta troncata: finish_reason=${finishReason}, usage=${JSON.stringify(usage)}`)
       throw new HttpError(502, 'Risposta del modello troncata: documento troppo lungo', 'MODEL_TRUNCATED')

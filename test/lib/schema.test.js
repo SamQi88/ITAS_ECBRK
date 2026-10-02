@@ -1,6 +1,6 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
-const { parseDate, parseAmount, normalizeRows } = require('../../srv/lib/schema')
+const { parseDate, parseAmount, normalizeRows, normalizeRitenuta } = require('../../srv/lib/schema')
 
 test('parseDate converte gg/mm/aaaa e rifiuta il resto', () => {
   assert.equal(parseDate('31/01/2026'), '2026-01-31')
@@ -56,4 +56,15 @@ test('parseAmount conserva il segno in stile contabile (meno finale, parentesi)'
   assert.equal(parseAmount('(1.927,76)'), -1927.76)
   assert.equal(parseAmount('-1.927,76'), -1927.76)
   assert.equal(parseAmount('0,00-'), 0)
+})
+
+test('normalizeRitenuta legge l\'importo complessivo, null se assente o illeggibile', () => {
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: '234,92' }), 234.92)
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: '2,88' }), 2.88)
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: 234.92 }), 234.92)
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: '1.234,50' }), 1234.5)
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: null }), null)
+  assert.equal(normalizeRitenuta({ ritenutaAcconto: 'n/d' }), null)
+  assert.equal(normalizeRitenuta({ righe: [] }), null)
+  assert.equal(normalizeRitenuta(null), null)
 })

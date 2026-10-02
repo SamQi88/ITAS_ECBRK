@@ -88,6 +88,29 @@ test('il token OAuth è condiviso e in cache anche con google e anthropic', asyn
   assert.equal(f.calls.filter(x => x.url.includes('/oauth/token')).length, 1)
 })
 
+test('il prompt chiede anche l\'importo complessivo della ritenuta d\'acconto', async () => {
+  const f = fakeFetch(() => gemini('{"righe":[]}'))
+  await createLlmClient({ config: google, fetchImpl: f }).extractPolicies({ text: 'x', images: [] })
+  const system = JSON.parse(callOf(f).opts.body).systemInstruction.parts[0].text
+  assert.match(system, /ritenutaAcconto/)
+  assert.match(system, /null/)
+})
+
+test('log dei tempi: famiglia, deployment, durata di token e chiamata; mai il contenuto', async () => {
+  const log = mock.method(console, 'log', () => {})
+  try {
+    const f = fakeFetch(() => gemini('{"righe":[{"contraente":"DATO SENSIBILE"}]}'))
+    const c = createLlmClient({ config: google, fetchImpl: f })
+    await c.extractPolicies({ text: 'x', images: [] })
+    await c.extractPolicies({ text: 'y', images: [] })
+    const lines = log.mock.calls.map(x => x.arguments.join(' '))
+    assert.equal(lines.length, 2)
+    assert.match(lines[0], /\[llm\] provider=google deployment=dg token=\d+ms chiamata=\d+ms finish=STOP/)
+    assert.match(lines[1], /token=cache/)
+    assert.doesNotMatch(lines.join('\n'), /DATO SENSIBILE/)
+  } finally { log.mock.restore() }
+})
+
 test('famiglia sconosciuta nella configurazione: errore 500 chiaro', () => {
   assert.throws(() => createLlmClient({ config: { ...common, provider: 'mistral', deploymentId: 'd' }, fetchImpl: fakeFetch(() => null) }), e => e.status === 500 && /mistral/.test(e.message))
 })

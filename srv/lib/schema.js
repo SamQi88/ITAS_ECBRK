@@ -48,4 +48,9 @@ function normalizeRows (raw) {
     .filter(r => r.contraente || r.numeroPolizza)
 }
 
-module.exports = { parseDate, parseAmount, normalizeRows }
+// importo complessivo della ritenuta d'acconto del documento (non quello delle singole righe)
+function normalizeRitenuta (raw) {
+  return parseAmount(raw && raw.ritenutaAcconto)
+}
+
+module.exports = { parseDate, parseAmount, normalizeRows, normalizeRitenuta }
