@@ -44,6 +44,14 @@ sap.ui.define([
       return v === null || v === undefined ? "" : amount.format(v);
     },
 
+    // tempo di elaborazione misurato dal server: "18,2 s" sotto il minuto, "2 min 56 s" oltre
+    formatDuration: function (ms) {
+      if (ms === null || ms === undefined) return "";
+      if (ms < 59950) return "Tempo di elaborazione: " + (ms / 1000).toFixed(1).replace(".", ",") + " s";
+      const total = Math.round(ms / 1000);
+      return "Tempo di elaborazione: " + Math.floor(total / 60) + " min " + (total % 60) + " s";
+    },
+
     // Parsing Confidence Score: verde da 90, arancione da 70, rosso sotto
     formatConfidenceText: function (c) {
       return c ? "Parsing Confidence Score: " + c.score + "%" : "";
@@ -74,7 +82,7 @@ sap.ui.define([
     _state: function (partial) {
       return Object.assign({
         fileName: "", rows: [], count: 0, busy: false, emptyText: EMPTY,
-        totalePremi: null, totaleProvvigioni: null, ritenuta: null, confidenza: null,
+        totalePremi: null, totaleProvvigioni: null, ritenuta: null, confidenza: null, tempoMs: null,
         modelLabel: this._modelLabel || ""
       }, partial);
     },
@@ -118,7 +126,8 @@ sap.ui.define([
           totalePremi: sum(body.righe, "premi"),
           totaleProvvigioni: sum(body.righe, "provvigioni"),
           ritenuta: body.ritenutaAcconto === undefined ? null : body.ritenutaAcconto,
-          confidenza: body.confidenza || null
+          confidenza: body.confidenza || null,
+          tempoMs: Number.isFinite(body.tempoElaborazioneMs) ? body.tempoElaborazioneMs : null
         }));
         // documento già caricato: il file viene comunque elaborato, l'utente ne viene solo avvisato
         if (body.warning) MessageBox.warning(body.warning);

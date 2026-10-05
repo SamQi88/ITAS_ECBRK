@@ -14,12 +14,17 @@
         </core:HTML>
         <ScrollContainer height="100%" vertical="true">
           <layoutData><l:SplitterLayoutData size="auto"/></layoutData>
-          <HBox alignItems="Center" wrap="Wrap" class="sapUiSmallMargin">
-            <Title text="Posizioni estratto conto ({/count})" class="sapUiSmallMarginEnd"/>
-            <ObjectStatus inverted="true" visible="{= !!${/confidenza}}"
-              text="{path: '/confidenza', formatter: '.formatConfidenceText'}"
-              state="{path: '/confidenza', formatter: '.formatConfidenceState'}"
-              tooltip="{path: '/confidenza', formatter: '.formatConfidenceTooltip'}"/>
+          <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiSmallMargin">
+            <HBox alignItems="Center" wrap="Wrap">
+              <Title text="Posizioni estratto conto ({/count})" class="sapUiSmallMarginEnd"/>
+              <ObjectStatus inverted="true" visible="{= !!${/confidenza}}"
+                text="{path: '/confidenza', formatter: '.formatConfidenceText'}"
+                state="{path: '/confidenza', formatter: '.formatConfidenceState'}"
+                tooltip="{path: '/confidenza', formatter: '.formatConfidenceTooltip'}"/>
+            </HBox>
+            <Text id="tempoElaborazione" text="{path: '/tempoMs', formatter: '.formatDuration'}"
+              visible="{= ${/tempoMs} !== null}"
+              tooltip="Tempo di elaborazione del file: dalla ricezione sul server alla risposta (lettura del PDF, modello IA e salvataggio)"/>
           </HBox>
           <HBox wrap="Wrap" class="sapUiSmallMarginBeginEnd sapUiSmallMarginBottom" visible="{= ${/count} > 0}">
             <VBox class="sapUiMediumMarginEnd">

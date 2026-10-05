@@ -67,6 +67,10 @@ Prova reale con `WIDE07.pdf` (23 pagine di solo testo, 472 righe, totali 374.722
 
 Una singola chiamata per un documento così lungo è quindi lenta e, con alcuni modelli, incompleta: il punteggio di confidenza lo segnala, ma non lo evita.
 
+## Tempo di elaborazione in pagina
+
+Sulla stessa riga del Parsing Confidence Score, a destra, compare "Tempo di elaborazione: 9,0 s" (oltre il minuto "2 min 56 s"). Lo misura il server: va dal momento in cui ha ricevuto il file fino alla risposta, quindi comprende lettura del PDF, modello IA e salvataggio ma non il trasferimento dal browser. Il valore arriva nella risposta di `/upload` come `tempoElaborazioneMs`; non viene salvato nel database.
+
 ## Tempi di risposta
 
 Con i due PDF di esempio l'estrazione richiede da 4 a 10 secondi. Per OpenAI e Gemini il ragionamento interno del modello è impostato su `low` (`reasoning_effort` e `thinkingLevel`, in `srv/lib/providers/`): dimezza i tempi con gli stessi risultati. Claude non ragiona e non ha un parametro equivalente.

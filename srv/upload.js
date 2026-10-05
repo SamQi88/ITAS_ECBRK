@@ -44,6 +44,8 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
         if (!file) throw new HttpError(400, 'Nessun file ricevuto', 'NO_FILE')
         if (file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new HttpError(400, 'Il file non è un PDF', 'NOT_PDF')
 
+        // tempo di elaborazione: dal file ricevuto alla risposta (esclude il trasferimento dal browser)
+        const inizio = Date.now()
         const nome = cleanName(file.originalname)
         const hash = crypto.createHash('sha256').update(file.buffer).digest('hex')
 
@@ -98,6 +100,7 @@ function createUploadHandler ({ db, extract, maxBytes = 10 * 1024 * 1024 }) {
           warning,
           ritenutaAcconto,
           confidenza,
+          tempoElaborazioneMs: Date.now() - inizio,
           righe
         })
       } catch (e) { next(e) }
