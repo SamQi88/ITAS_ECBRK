@@ -1,6 +1,6 @@
 <mvc:View xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:l="sap.ui.layout" xmlns:core="sap.ui.core"
   controllerName="itas.ecbrk.Main" height="100%">
-  <Page title="Rendiconti provvigionali" enableScrolling="false" class="sapUiNoContentPadding">
+  <Page title="EC broker smart ingestion" enableScrolling="false" class="sapUiNoContentPadding">
     <headerContent>
       <Text text="{= 'Modello: ' + ${/modelLabel}}" visible="{= !!${/modelLabel}}" class="sapUiSmallMarginEnd"/>
       <Text text="{/fileName}" class="sapUiSmallMarginEnd"/>
